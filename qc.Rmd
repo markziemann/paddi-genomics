@@ -1,0 +1,204 @@
+---
+title: "PADDI RNA expression analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+Let's QC this data.
+
+```{r,libraries}
+
+library("gplots")
+library("reshape2")
+
+```
+
+## Multi-qc results
+
+Please have a look at the multiQC report. 
+Here are a few key points:
+
+* Skewer trimming resulted in loss of only a tiny number of bases.
+This indicates the sequence quality is very high.
+
+* Fastqc results showing the number of unique and duplicate reads indicates a few samples with <10M unique reads.
+
+* Per seqence GC content showed an unusual profile for two samples.
+PG1423-EOS R1 and R2 had GC profile max at 40% compared to the mean.
+PG2090-EOS also showed an unusual pattern with underrepresented low GC%.
+
+* Sequence duplication levels were elevated for some fastq files.
+Here are the files of concern, with <20% unique reads:
+PG3627-POD1_S86_R1_001
+PG3627-POD1_S86_R2_001
+PG3609-T0_S317_R1_001
+PG2090-EOS_S134_R1_001
+PG2090-EOS_S134_R2_001
+
+* There were two files with overrepresented sequences: PG2090-EOS R1 and R2. Others are okay.
+
+* Adapter content was very low which is good.
+
+The fastq files were also checked with validatefastq-assembly which looks for signs of file corruption which can occur in large data transfers.
+No problematic files were detected.
+
+## rRNA amount
+
+Ribosomal RNA carryover can be a source of noise.
+The proportion should be <10% and there were a few samples in excess of this including PG2020-EOS, PG815-EOS, PG1452-EOS and PG702-POD1.
+ 
+```{r,rrna}
+
+rrna <- read.table("rrna_stats.txt")
+rrna <- rrna[,c(1,5)]
+rrna$V1 <- sapply(strsplit(rrna$V1,"\\."),"[[",1)
+rrna$V5 <- gsub("\\(","",rrna$V5)
+rrna$V5 <- gsub("%","",rrna$V5)
+rrna$V5 <- as.numeric(rrna$V5)
+str(rrna)
+
+rrna2 <- rrna[,2]
+names(rrna2) <- rrna[,1]
+
+par(mar=c(5,8,3,1))
+barplot(rrna2,horiz=TRUE,las=1,cex.names=0.5,main="rRNA carryover")
+rrna2 <- rrna2[order(-rrna2)]
+barplot(head(rrna2,20),horiz=TRUE,las=1,cex.names=0.6,main="rRNA carryover")
+
+```
+
+## Load the data
+
+```{r,load}
+
+tmp <- read.table("3col.tsv.gz",header=FALSE)
+x <- as.matrix(acast(tmp, V2~V1, value.var="V3", fun.aggregate = sum))
+x <- as.data.frame(x)
+accession <- sapply((strsplit(rownames(x),"\\|")),"[[",2)
+symbol<-sapply((strsplit(rownames(x),"\\|")),"[[",6)
+x$geneid <- paste(accession,symbol)
+xx <- aggregate(. ~ geneid,x,sum)
+rownames(xx) <- xx$geneid
+colnames <- gsub("T0R","T0",colnames(xx))
+xx$geneid = NULL
+xx <- round(xx)
+xx[1:10,1:6]
+
+```
+
+## Number of reads per sample
+
+Let's look at the number of reads per sample
+
+Most samples were in the range of 25-30 million assigned reads.
+Just 2 samples had less than 20 million reads: PG1452-EOS and PG1423-EOS.
+The maximum read count was about 40 million for PG7072-EOS.
+
+```{r,numreads}
+
+xxcs <- colSums(xx)
+par(mar=c(5,8,3,1))
+barplot(xxcs,horiz=TRUE,las=1,main="no. reads per sample")
+barplot(head(xxcs[order(xxcs)],20),horiz=TRUE,las=1,main="lowest no. reads per sample")
+barplot(head(xxcs[order(-xxcs)],20),horiz=TRUE,las=1,main="highest no. reads per sample")
+
+```
+
+
+## MDS
+
+Some outliers are apparent.
+
+PG2090-EOS to the left of the chart - this is clearly the effect of rRNA carryover.
+Other samples over to the left of the chart include PG815-EOS, PG145-EOS and PG702-POD1 which all have elevated rRNA.
+
+```{r,mds1}
+
+mds <- cmdscale(dist(t(xx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2", 
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) ,
+  type = "p", col="gray", pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+text(mds, labels=rownames(mds), cex=0.8) 
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2", 
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 , 
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0, orange=POD1, pink=EOS")
+
+```
+
+Exclude PG2090-EOS and repeat the analysis.
+
+```{r,mds2}
+
+xx <- xx[,grep("PG2090-EOS",colnames(xx),invert=TRUE)]
+
+mds <- cmdscale(dist(t(xx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) ,
+  type = "p", col="gray", pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+text(mds, labels=rownames(mds), cex=0.8)
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0, orange=POD1, pink=EOS")
+
+```
+
+In the MDS plot with PG2090-EOS removed, there appears to be some separation of T0, POD1 and EOS samples.
+POD1 (orange) are more towards the upper side of the chart and T0 (blue) are toward the bottom right.
+EOS (pink) are quite spread out.
+
+## Conclusion
+
+PG2090-EOS suffered rRNA carryover and needs to be re-prepared. 
+The other samples with slightly higher rRNA are not a problem as the rRNA can be corrected for statistically.
+not sure what to do about samples with low numbers of unique reads.
+
+## Session information
+
+For reproducibility
+
+```{r,sessioninfo}
+
+sessionInfo()
+
+```

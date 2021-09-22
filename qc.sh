@@ -8,5 +8,7 @@ for FQZ1 in *R1_001.fastq.gz ; do
   java -jar /home/ziemannm/paddi/sw/validatefastq-assembly-0.1.1.jar \
   -l info \
   --fastq1 $FQZ1 --fastq2 $FQZ2 \
-   > test_R1_001.fastq.gz.val  2>&1
+   > $FQZ1.val  2>&1
 done
+
+multiqc .
