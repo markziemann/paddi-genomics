@@ -19,12 +19,13 @@ Let's QC this data.
 
 library("gplots")
 library("reshape2")
+library("WGCNA")
 
 ```
 
 ## Multi-qc results
 
-Please have a look at the multiQC report. 
+Please have a look at the multiQC report.
 Here are a few key points:
 
 * Skewer trimming resulted in loss of only a tiny number of bases.
@@ -55,7 +56,7 @@ No problematic files were detected.
 
 Ribosomal RNA carryover can be a source of noise.
 The proportion should be <10% and there were a few samples in excess of this including PG2020-EOS, PG815-EOS, PG1452-EOS and PG702-POD1.
- 
+
 ```{r,rrna}
 
 rrna <- read.table("rrna_stats.txt")
@@ -131,10 +132,10 @@ maxx <- max(mds[,1])
 miny <- min(mds[,2])
 maxy <- max(mds[,2])
 
-plot(mds, xlab="Coordinate 1", ylab="Coordinate 2", 
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
   xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) ,
   type = "p", col="gray", pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
-text(mds, labels=rownames(mds), cex=0.8) 
+text(mds, labels=rownames(mds), cex=0.8)
 
 col <- rownames(mds)
 col <- sapply(strsplit(col,"-"),"[[",2)
@@ -142,8 +143,8 @@ col <- gsub("T0","lightblue",col)
 col <- gsub("POD1","orange",col)
 col <- gsub("EOS","pink",col)
 
-plot(mds, xlab="Coordinate 1", ylab="Coordinate 2", 
-  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 , 
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
   type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
 #text(mds, labels=rownames(mds), cex=0.8) 
 mtext("blue=T0, orange=POD1, pink=EOS")
@@ -189,9 +190,182 @@ EOS (pink) are quite spread out.
 
 ## Conclusion
 
-PG2090-EOS suffered rRNA carryover and needs to be re-prepared. 
+PG2090-EOS suffered rRNA carryover and needs to be re-prepared.
 The other samples with slightly higher rRNA are not a problem as the rRNA can be corrected for statistically.
 not sure what to do about samples with low numbers of unique reads.
+
+## Load patient info
+
+```{r,loadpatientinfo}
+
+xx <- xx[,order(colnames(xx))]
+
+ss <- read.csv("PADDIgenomicsData.csv")
+ss <- ss[order(ss$PG_number),]
+colnames(ss)
+str(ss)
+summary(ss)
+
+ss1 <- ss
+
+rownames(ss) <- paste(ss$PG_number,ss$timepoint,sep="-")
+
+dim(ss)
+
+ss$sexD <- as.numeric(factor(ss$sexD))
+ss$ethnicityD <- as.numeric(factor(ss$ethnicityD))
+ss$current_smokerD <- as.numeric(factor(ss$current_smokerD))
+ss$diabetes_typeD <- as.numeric(factor(ss$diabetes_typeD))
+ss$daily_insulinD <- as.numeric(factor(ss$daily_insulinD))
+ss$oral_hypoglycemicsD <- as.numeric(factor(ss$oral_hypoglycemicsD))
+ss$crp_preopD <- as.numeric(gsub("<5","2.5",gsub("<1","0.5",gsub("<1.0","0.5",ss$crp_preopD))))
+ss$surgery_dominantD <- as.numeric(factor(ss$surgery_dominantD))
+ss$wound_typeOP <- as.numeric(factor(ss$wound_typeOP))
+ss$risk_cat <- as.numeric(factor(ss$risk_cat,levels=c("Low","Moderate","High")))
+ss$wound_type_cat <- as.numeric(factor(ss$wound_type_cat))
+ss$anyDex <- as.numeric(factor(ss$anyDex))
+
+ss$bmi_cat <- as.numeric(factor(ss$bmi_cat,
+  levels=c("Underweight [BMI<18.5]","Normal [18.5 to <25]",
+  "Overweight [25 to <30]","Obese [30 to <40]","Super obese [40+]")))
+
+ss <- ss[,c("PG_number","sexD","ageD","weightD","asaD","heightD","ethnicityD",
+  "current_smokerD","diabetes_typeD","daily_insulinD","creatinine_preopD",
+  "surgery_dominantD","wound_typeOP","HbA1c","bmi","revised_whodas_preop",
+  "neut_lymph_ratio_d0","neut_lymph_ratio_d1","neut_lymph_ratio_d2","ab_noninfection",
+  "risk","risk_cat","bmi_cat","wound_type_cat","duration_sx","anyDex","treatment_group",
+  "deltacrp","crp_group")]
+
+ss <- ss[order(rownames(ss)),]
+
+ss_t0 <- ss
+ss_eos <- ss
+ss_pod1 <- ss
+
+ss_t0$timepoint <- "T0"
+ss_eos$timepoint <- "EOS"
+ss_pod1$timepoint <- "POD1"
+
+rownames(ss_t0) <- paste(ss_t0$PG_number,"T0",sep="-")
+rownames(ss_eos) <- paste(ss_t0$PG_number,"EOS",sep="-")
+rownames(ss_pod1) <- paste(ss_t0$PG_number,"POD1",sep="-")
+
+ss <- rbind(ss_t0, ss_eos, ss_pod1)
+
+rownames(ss) <- paste(ss$PG_number,ss$timepoint,sep="-")
+
+
+xt0 <- xx[,grep("T0",colnames(xx))]
+xpod1 <- xx[,grep("POD1",colnames(xx))]
+xeos <- xx[,grep("EOS",colnames(xx))]
+
+xt0f <- xt0[rowMeans(xt0)>=10,]
+xpod1f <- xpod1[rowMeans(xpod1)>=10,]
+xeosf <- xeos[rowMeans(xeos)>=10,]
+
+dim(xt0f)
+dim(xpod1f)
+dim(xeosf)
+
+ss_t0 <- ss_t0[which(rownames(ss_t0) %in% colnames(xt0)),]
+ss_pod1 <- ss_pod1[which(rownames(ss_pod1) %in% colnames(xpod1)),]
+ss_eos <- ss_eos[which(rownames(ss_eos) %in% colnames(xeos)),]
+
+colnames(xt0) %in% rownames(ss_t0)
+colnames(xpod1) %in% rownames(ss_pod1)
+colnames(xeos) %in% rownames(ss_eos)
+
+rownames(ss_t0) %in% colnames(xt0)
+rownames(ss_pod1) %in% colnames(xpod1)
+rownames(ss_eos) %in% colnames(xeos)
+
+xxf <- xx[rowMeans(xx)>=10,]
+xxf <- xxf[,order(colnames(xxf))]
+
+```
+
+## PCA Analysis
+
+This is a clinical study and each patient has detailed clinical metadata.
+Not all of these will be important to the gene expression profiles.
+Do determine that, we will use PCA analysis of the first 5 PCs to understand which
+PCs associate with which clinical parameters.
+
+```{r,pca}
+
+mx <- xt0f
+ss2 <- ss_t0
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+
+pdf("pca_cor.pdf",height=7,width=7)
+par(cex=0.75, mar = c(6, 8.5, 3, 3))
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @T0: Top principal components"))
+
+mx <- xeosf
+ss2 <- ss_eos
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @EOS: Top principal components"))
+
+mx <- xpod1f
+ss2 <- ss_pod1
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @POD1: Top principal components"))
+
+dev.off()
+
+```
 
 ## Session information
 
