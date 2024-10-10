@@ -20,6 +20,7 @@ Let's QC this data.
 library("gplots")
 library("reshape2")
 library("WGCNA")
+library("dplyr")
 
 ```
 
@@ -291,6 +292,81 @@ Not all of these will be important to the gene expression profiles.
 Do determine that, we will use PCA analysis of the first 5 PCs to understand which
 PCs associate with which clinical parameters.
 
+```{r,pca1}
+
+mx <- xt0f
+ss2 <- ss_t0
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+
+par(cex=0.75, mar = c(6, 8.5, 3, 3))
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @T0: Top principal components"))
+
+mx <- xeosf
+ss2 <- ss_eos
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @EOS: Top principal components"))
+
+mx <- xpod1f
+ss2 <- ss_pod1
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+loadings = pca$x
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-trait relationships @POD1: Top principal components"))
+
+```
+
+Now export PDF.
+
 ```{r,pca}
 
 mx <- xt0f
@@ -364,6 +440,642 @@ labeledHeatmap(Matrix = t(moduleTraitCor),
   main = paste("PCA-trait relationships @POD1: Top principal components"))
 
 dev.off()
+
+```
+
+PCA plots
+
+
+```{r,pcaplots,fig.height=9,fig.width=9}
+
+
+par(mfrow=c(3,3))
+
+#T0
+mx <- xt0f
+ss2 <- ss_t0
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-T0","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,1:2],labels=labs)
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,c(1,3)],labels=labs)
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,2:3],labels=labs)
+
+#EOS
+mx <- xeosf
+ss2 <- ss_eos
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-EOS","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,1:2],labels=labs)
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,c(1,3)],labels=labs)
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,2:3],labels=labs)
+
+#POD1
+mx <- xpod1f
+ss2 <- ss_pod1
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-POD1","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs)
+mtext("POD1")
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs)
+mtext("POD1")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs)
+mtext("POD1")
+
+dev.off()
+
+pdf("pca_charts.pdf",width=9,height=9)
+par(mfrow=c(3,3))
+#T0
+mx <- xt0f
+ss2 <- ss_t0
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-T0","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,1:2],labels=labs)
+
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,c(1,3)],labels=labs)
+
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("T0")
+text(pca$x[,2:3],labels=labs)
+
+#EOS
+mx <- xeosf
+ss2 <- ss_eos
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-EOS","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,1:2],labels=labs)
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,c(1,3)],labels=labs)
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+mtext("EOS")
+text(pca$x[,2:3],labels=labs)
+
+#POD1
+mx <- xpod1f
+ss2 <- ss_pod1
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-POD1","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs)
+mtext("POD1")
+plot(pca$x[,c(1,3)],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs)
+mtext("POD1")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col="gray",pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs)
+mtext("POD1")
+
+dev.off()
+
+```
+
+## Specific PCA charts
+
+Specific PCAs for key clinical parameters:
+
+* wound type
+* surg duration
+* ethnicity
+* age
+* sex
+
+And ones we didn't include:
+
+* bmi
+* asaD
+* smoker
+* diabetes_typeD
+
+```{r,pcaplots_t0}
+
+# wound type clean (1) contaminated (2)
+
+mx <- xt0f
+ss2 <- ss_t0
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-T0","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$wound_type_cat)
+cols <- gsub("2","red",gsub("1","gray",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - wound type")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - wound type")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - wound type")
+
+# surg duration
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_t0$duration_sx, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - surgical duration deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - surgical duration deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - surgical duration deciles")
+
+# Ethnicity Levels [1-4]: Asian, Maori/Polynesian, Other, White/Caucasian
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$ethnicityD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - ethnicity")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - ethnicity")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - ethnicity")
+
+# age
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_t0$ageD, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - age deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - age deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - age deciles")
+
+# sex female=1 male=2
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$sexD)
+cols <- gsub("1","pink",gsub("2","lightblue",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - sex: female=pink, male=lightblue")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - sex: female=pink, male=lightblue"")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - sex: female=pink, male=lightblue")
+
+# bmi
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_t0$bmi, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - BMI deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - BMI deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - BMI deciles")
+
+# asaD levels 1:4 black,red,green,blue
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$asaD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - asaD")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - asaD")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - asaD")
+
+# Current smoker no, yes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$current_smokerD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - current smoker")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - current smoker")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - current smoker")
+
+# diabetes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$diabetes_typeD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - diabetes")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - diabetes")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - diabetes")
+
+```
+
+EOS.
+
+```{r,pcaplots_eos}
+
+# wound type clean (1) contaminated (2)
+
+mx <- xeosf
+ss2 <- ss_eos
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-T0","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$wound_type_cat)
+cols <- gsub("2","red",gsub("1","gray",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - wound type")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - wound type")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - wound type")
+
+# surg duration
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_eos$duration_sx, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - surgical duration deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - surgical duration deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - surgical duration deciles")
+
+# Ethnicity Levels [1-4]: Asian, Maori/Polynesian, Other, White/Caucasian
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$ethnicityD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS  - ethnicity")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS  - ethnicity")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS  - ethnicity")
+
+# age
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_eos$ageD, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - age deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - age deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - age deciles")
+
+# sex female=1 male=2
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$sexD)
+cols <- gsub("1","pink",gsub("2","lightblue",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - sex: female=pink, male=lightblue")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - sex: female=pink, male=lightblue"")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - sex: female=pink, male=lightblue")
+
+# bmi
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_eos$bmi, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - BMI deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - BMI deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - BMI deciles")
+
+# asaD levels 1:4 black,red,green,blue
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$asaD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - asaD")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - asaD")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - asaD")
+
+# Current smoker no, yes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$current_smokerD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - current smoker")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - current smoker")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - current smoker")
+
+# diabetes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$diabetes_typeD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - diabetes")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - diabetes")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - diabetes")
+
+```
+
+POD1.
+
+```{r,pcaplots_pod1}
+
+# wound type clean (1) contaminated (2)
+
+mx <- xpod1f
+ss2 <- ss_pod1
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+labs=gsub("-T0","",rownames(pca$x))
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$wound_type_cat)
+cols <- gsub("2","red",gsub("1","gray",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - wound type")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - wound type")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - wound type")
+
+# surg duration
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_pod1$duration_sx, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - surgical duration deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - surgical duration deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - surgical duration deciles")
+
+# Ethnicity Levels [1-4]: Asian, Maori/Polynesian, Other, White/Caucasian
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$ethnicityD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1  - ethnicity")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1  - ethnicity")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1  - ethnicity")
+
+# age
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_pod1$ageD, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - age deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - age deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - age deciles")
+
+# sex female=1 male=2
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$sexD)
+cols <- gsub("1","pink",gsub("2","lightblue",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - sex: female=pink, male=lightblue")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - sex: female=pink, male=lightblue"")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - sex: female=pink, male=lightblue")
+
+# bmi
+my_palette <- colorRampPalette(c("yellow", "orange", "red"))(n = 10)
+decile <- ntile(ss_pod1$bmi, 10)
+mycols <- my_palette[decile]
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+plot(pca$x[,1:2],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - BMI deciles")
+plot(pca$x[,c(1,3)],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - BMI deciles")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=mycols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - BMI deciles")
+
+# asaD levels 1:4 black,red,green,blue
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$asaD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - asaD")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - asaD")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - asaD")
+
+# Current smoker no, yes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$current_smokerD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - current smoker")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - current smoker")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - current smoker")
+
+# diabetes
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$diabetes_typeD)
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - diabetes")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - diabetes")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - diabetes")
 
 ```
 
