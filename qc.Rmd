@@ -306,6 +306,7 @@ PCs associate with which clinical parameters.
 mx <- xt0f
 ss2 <- ss_t0
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number = NULL
 
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
@@ -333,6 +334,7 @@ labeledHeatmap(Matrix = t(moduleTraitCor),
 mx <- xeosf
 ss2 <- ss_eos
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number =NULL
 
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
@@ -357,6 +359,7 @@ labeledHeatmap(Matrix = t(moduleTraitCor),
 mx <- xpod1f
 ss2 <- ss_pod1
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number = NULL
 
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
@@ -387,6 +390,7 @@ Now export PDF.
 mx <- xt0f
 ss2 <- ss_t0
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number = NULL
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
 
@@ -414,6 +418,7 @@ labeledHeatmap(Matrix = t(moduleTraitCor),
 mx <- xeosf
 ss2 <- ss_eos
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number = NULL
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
 plot(pca,type="lines",col="blue")
@@ -437,6 +442,7 @@ labeledHeatmap(Matrix = t(moduleTraitCor),
 mx <- xpod1f
 ss2 <- ss_pod1
 ss2$ethnicityCAT = ss2$ageCS = NULL
+ss2$timepoint = ss2$PG_number = NULL
 pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
 loadings = pca$x
 plot(pca,type="lines",col="blue")
@@ -602,6 +608,7 @@ Specific PCAs for key clinical parameters:
 * ethnicity
 * age
 * sex
+* treatment group
 
 And ones we didn't include:
 
@@ -769,6 +776,23 @@ plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
 text(pca$x[,2:3],labels=labs,cex=0.7)
 mtext("T0 - diabetes")
 
+# treatment group
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_t0$treatment_group)
+cols <- gsub("2","orange",gsub("1","cyan3",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("T0 - treatment group")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("T0 - treatment group")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("T0 - treatment group")
+
 ```
 
 EOS.
@@ -931,6 +955,23 @@ XMAX=max(pca$x[,2])*1.1
 plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
 text(pca$x[,2:3],labels=labs,cex=0.7)
 mtext("EOS - diabetes")
+
+# treatment group
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_eos$treatment_group)
+cols <- gsub("2","orange",gsub("1","cyan3",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("EOS - treatment group")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("EOS - treatment group")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("EOS - treatment group")
 
 ```
 
@@ -1095,6 +1136,23 @@ plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
 text(pca$x[,2:3],labels=labs,cex=0.7)
 mtext("POD1 - diabetes")
 
+# treatment group
+XMIN=min(pca$x[,1])*1.1
+XMAX=max(pca$x[,1])*1.1
+cols <- as.character(ss_pod1$treatment_group)
+cols <- gsub("2","orange",gsub("1","cyan3",cols))
+plot(pca$x[,1:2],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,1:2],labels=labs,cex=0.7)
+mtext("POD1 - treatment group")
+plot(pca$x[,c(1,3)],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,c(1,3)],labels=labs,cex=0.7)
+mtext("POD1 - treatment group")
+XMIN=min(pca$x[,2])*1.1
+XMAX=max(pca$x[,2])*1.1
+plot(pca$x[,2:3],cex=2,col=cols,pch=19,bty="none", xlim=c(XMIN,XMAX) )
+text(pca$x[,2:3],labels=labs,cex=0.7)
+mtext("POD1 - treatment group")
+
 ```
 
 ## Blood composition
@@ -1162,6 +1220,102 @@ sscell_pod1 <- sscell[grep("POD1",rownames(sscell)),]
 
 ```
 
+Now look at how cell types associate with the PCAs.
+
+```{r,cellpca}
+
+#xt0f xeosf xpod1f
+#sscell_t0 sscell_eos sscell_pod1
+
+
+## T0
+mx <- xt0f
+
+ss2 <- sscell_t0
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @T0: Top principal components"))
+
+## EOS
+mx <- xeosf
+
+ss2 <- sscell_eos
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @EOS: Top principal components"))
+
+
+## POD1
+mx <- xpod1f
+
+ss2 <- sscell_pod1
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @POD1: Top principal components"))
+
+```
+
+The conclusion here is that the cell types correlate strongly with the principal components.
+The good news is that we have selected the cell types that associate the strongest, so we can
+correct for their contribution.
+
 ## Differential expression
 
 Specific PCAs for key clinical parameters:
@@ -1189,27 +1343,148 @@ And ones we didn't include:
 
 TODO:
 
-* need to centre and scale the age data
+* age data centred and scaled
 
-* need to make true unordered categories for ethnicity
+* ethnicity categories unordered
 
-```{dge1}
+Treatment group differences in EOS.
+
+```{dget0_1}
 
 mx <- xt0f
 ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
 
+# base model
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ wound_typeOP + duration_sx + ethnicityD + ageD + sexD + treatment_group )
+  design = ~ treatment_group )
 
 res <- DESeq(dds)
 z <- results(res)
 vsd <- vst(dds, blind=FALSE)
 zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
 
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
 
 ```
+
+Treatment group differences in EOS.
+
+```{dgeeos_1}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+```
+
+Treatment group differences in POD1.
+
+```{dgepod1_1}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+```
+
 
 ## Session information
 
