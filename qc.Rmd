@@ -1402,15 +1402,15 @@ TODO:
 
 ## Overview
 
-1. CRP group comparisons not stratified for treatment group (inflamation) Need to do
+1. CRP group comparisons not stratified for treatment group (inflamation)
 
-2. Treatment group comparisons not stratified for CRP group (Steroid) (Done)
+2. Treatment group comparisons not stratified for CRP group (Steroid)
 
-3 Treatment group complarisons stratified for CRP group:  steroid and inflammation (Done)
+3. CRP group comparisons statified for treatment group: inflammation and steroid
+
+4. Treatment group complarisons stratified for CRP group:  steroid and inflammation
 
 ## CRP group differences not stratified
-
-## CRP Group Comparisons statified
 
 ### CRP low vs high at t=0
 
@@ -1443,6 +1443,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_t0 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1457,7 +1458,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_t0 <- dge
+crp_t0_adj <- dge
 
 ```
 
@@ -1492,6 +1493,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_eos <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1506,7 +1508,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_eos <- dge
+crp_eos_adj <- dge
 
 ```
 
@@ -1541,6 +1543,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_pod1 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1555,7 +1558,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_pod1 <- dge
+crp_pod1_adj <- dge
 
 ```
 
@@ -1592,6 +1595,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_t0 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1606,7 +1610,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_t0 <- dge
+avb_t0_adj <- dge
 
 ```
 
@@ -1641,6 +1645,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_eos <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1655,7 +1660,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_eos <- dge
+avb_eos_adj <- dge
 
 ```
 
@@ -1690,6 +1695,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_pod1 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1704,7 +1710,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_pod1 <- dge
+avb_pod1_adj <- dge
 
 ```
 
@@ -1742,6 +1748,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crplo_t0 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1756,7 +1763,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crplo_t0 <- dge
+avb_crplo_t0_adj <- dge
 
 ```
 
@@ -1792,6 +1799,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crphi_t0 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1806,7 +1814,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crphi_t0 <- dge
+avb_crphi_t0_adj <- dge
 
 ```
 
@@ -1842,6 +1850,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crplo_eos <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1856,7 +1865,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crplo_eos <- dge
+avb_crplo_eos_adj <- dge
 
 ```
 
@@ -1892,6 +1901,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crphi_eos <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1906,7 +1916,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crphi_eos <- dge
+avb_crphi_eos_adj <- dge
 
 ```
 
@@ -1942,6 +1952,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crplo_pod1 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -1956,7 +1967,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crplo_pod1 <- dge
+avb_crplo_pod1_adj <- dge
 
 ```
 
@@ -1992,6 +2003,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+avb_crphi_pod1 <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2006,7 +2018,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-avb_crphi_pod1 <- dge
+avb_crphi_pod1_adj <- dge
 
 ```
 
@@ -2044,6 +2056,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_t0_a <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2058,7 +2071,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_t0_a <- dge
+crp_t0_a_adj <- dge
 
 ```
 
@@ -2094,6 +2107,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_t0_b <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2108,7 +2122,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_t0_b <- dge
+crp_t0_b_adj <- dge
 
 ```
 
@@ -2144,6 +2158,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_eos_a <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2158,7 +2173,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_eos_a <- dge
+crp_eos_a_adj <- dge
 
 ```
 
@@ -2194,6 +2209,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_eos_b <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2208,7 +2224,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_eos_b <- dge
+crp_eos_b_adj <- dge
 
 ```
 
@@ -2244,6 +2260,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_pod1_a <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2258,7 +2275,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_pod1_a <- dge
+crp_pod1_a_adj <- dge
 
 ```
 
@@ -2294,6 +2311,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
+crp_pod1_b <- dge
 
 # model with clinical and cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -2308,147 +2326,7 @@ zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
-crp_pod1_b <- dge
-
-```
-
-## Treatment group differences not stratified for CRP group
-
-### Treatment group differences in t0
-
-```{r,dget0_1}
-
-mx <- xt0f
-ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
-
-# base model
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical covariates
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical and cell covariates
-# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-```
-
-### Treatment group differences in EOS
-
-```{r,dgeeos_1}
-
-mx <- xeosf
-ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
-
-# base model
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical covariates
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical and cell covariates
-# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-```
-
-### Treatment group differences in POD1
-
-```{r,dgepod1_1}
-
-mx <- xpod1f
-ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
-
-# base model
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical covariates
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
-
-# model with clinical and cell covariates
-# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
-dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
-  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
-
-res <- DESeq(dds)
-z <- results(res)
-vsd <- vst(dds, blind=FALSE)
-zz <- cbind(as.data.frame(z),assay(vsd))
-dge <- as.data.frame(zz[order(zz$pvalue),])
-head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
+crp_pod1_b_adj <- dge
 
 ```
 
@@ -2457,6 +2335,8 @@ mean(abs(dge$stat))
 For reproducibility
 
 ```{r,sessioninfo}
+
+save.image("qc.Rds")
 
 sessionInfo()
 
