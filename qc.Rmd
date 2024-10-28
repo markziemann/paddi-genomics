@@ -1400,21 +1400,315 @@ TODO:
 
 * ethnicity categories unordered
 
-### From Chris
+## Overview
 
-I think your questions relate to aim 1.
+1. CRP group comparisons not stratified for treatment group (inflamation) Need to do
 
-1.     Characterise the relationship between the early (within 24h) systemic inflammatory-immune gene expression
-response and postoperative systemic inflammation and the effect of intraoperative dexamethasone
+2. Treatment group comparisons not stratified for CRP group (Steroid) (Done)
 
-Specific hypothesis: Patients with high levels of postoperative systemic inflammation, as measured by CRP,
-demonstrate greater early (within 24 h) changes in immune cell gene expression compared to patients with low levels
-of postoperative systemic inflammation following major surgery.
+3 Treatment group complarisons stratified for CRP group:  steroid and inflammation (Done)
 
-1. Stratify for CRP group at each time point (Q4 Hi vs Q1 low). Should be ballanced analysis at each time point
-hightlight the effect of inflammation.
+## CRP group differences not stratified
 
-## Treatment group differences
+## CRP Group Comparisons statified
+
+### CRP low vs high at t=0
+
+```{r,crp_t0}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_t0 <- dge
+
+```
+
+### CRP low vs high at EOS
+
+```{r,crp_eos}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos <- dge
+
+```
+
+### CRP low vs high at POD1
+
+```{r,crp_pod1}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1 <- dge
+
+```
+
+## Treatment group differences not stratified
+
+### Treatment A vs B at t0
+
+```{r,avb_t0}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_t0 <- dge
+
+```
+
+### Treatment A vs B at EOS
+
+```{r,avb_eos}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_eos <- dge
+
+```
+
+### Treatment A vs B at POD1
+
+```{r,avb_pod1}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_pod1 <- dge
+
+```
+
+## Treatment group differences stratified
 
 ### Treatment A vs B t0 in CRP low group
 
@@ -1716,7 +2010,7 @@ avb_crphi_pod1 <- dge
 
 ```
 
-## CRP Group Comparisons
+## CRP Group Comparisons statified
 
 ### CRP low vs high at t=0 treatment group A
 
@@ -2018,40 +2312,6 @@ crp_pod1_b <- dge
 
 ```
 
-2. Statify for Treatment group (A or B partially blinded).
-This should be ballanced as Treatment A or B (as per randomisaiton) at each time point.
-Highligh the effect or treatment.
-
-3. Within Q4 stratify for A or B (un ballanced) set up for aim 2
-
-4. Within Q1 stratify for A or B (un ballanced) set up for aim 2
-
-This will address the hypothesis 1, and set up for the analysis to follow (aim 2).
-
-The analysis will be A. un-adjusted and B. adjsuted for confounding variables as per the planned to include from
-the PCAs.
-All analysis are adjusted for the cell characterisations.
-Not sure about neutrophils, as there shouldnt be any in PBMCs?
-
-Note the 4 groups.
-
-High inflammation (Q4) with treatment A
-
-* High inflammation (Q4) with treatment B
-
-* Low inflammation (Q1) with treatment A
-
-* Low inflammation (Q1) with treatment B
-
-Next phase will be:
-
-2.     Identify the top early (withing 24h) differentially expressed inflammatory-immune genes associated with
-postoperative systemic inflammation and the effect of intraoperative dexamethasone.
-
-Specific hypothesis: The early (within 24 h) changes in immune cell gene expression associated with postoperative
-systemic inflammation are significantly altered by intra-operative dexamethasone (8 mg) compared to placebo.
-
-
 ## Treatment group differences not stratified for CRP group
 
 ### Treatment group differences in t0
@@ -2191,7 +2451,6 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 
 ```
-
 
 ## Session information
 
