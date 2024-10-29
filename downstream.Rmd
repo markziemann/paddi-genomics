@@ -1,0 +1,258 @@
+---
+title: "PADDI RNA expression downstream analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+The differential analysis was already conducted using the qc.Rmd script.
+Here we are doing downstream analysis including pathway analysis and charts.
+
+```{r,libraries}
+
+suppressPackageStartupMessages({
+  library("gplots")
+  library("reshape2")
+  library("WGCNA")
+  library("dplyr")
+  library("DESeq2")
+  library("mitch")
+  library("MASS")
+  library("kableExtra")
+  library("ggplot2")
+  library("eulerr")
+})
+
+load("qc.Rds")
+
+```
+
+## Functions
+
+```{r,myfunctions}
+
+volcanoplot <- function(x,title) {
+  tot <- nrow(x)
+  sig <- subset(x,padj<0.05)
+  nsig <- nrow(subset(x,padj<0.05))
+  dn <- nrow(subset(x,padj<0.05 & log2FoldChange<0))
+  up <- nrow(subset(x,padj<0.05 & log2FoldChange>0))
+  header <- paste(title,":", tot, "genes,", nsig ,"@5% FDR,", up, "up,", dn, "dn")
+
+  plot(x$log2FoldChange,-log10(x$pvalue),bty="n",
+    cex=0.5, pch=19, xlab="log2 fold change",
+    ylab="-log10 p-value", main=header)
+
+  points(sig$log2FoldChange,-log10(sig$pvalue),
+    cex=0.5, pch=19, col="red")
+}
+
+smearplot <- function(x,title) {
+  tot <- nrow(x)
+  sig <- subset(x,padj<0.05)
+  nsig <- nrow(subset(x,padj<0.05))
+  dn <- nrow(subset(x,padj<0.05 & log2FoldChange<0))
+  up <- nrow(subset(x,padj<0.05 & log2FoldChange>0))
+  header <- paste(title,":", tot, "genes,", nsig ,"@5% FDR,", up, "up,", dn, "dn")
+
+  plot(log10(x$baseMean),x$log2FoldChange,bty="n",
+    cex=0.5, pch=19, xlab="log10 base mean",
+    ylab="log2 fold change", main=header)
+
+  points(log10(sig$baseMean),sig$log2FoldChange,
+    cex=0.5, pch=19, col="red")
+}
+
+debar <- function(l) {
+  nn <- sapply(l,function(x) {
+    nup <- nrow(subset(x,padj<0.05 & log2FoldChange>0 ))
+    ndn <- nrow(subset(x,padj<0.05 & log2FoldChange<0 )) *-1
+    return(c(nup,ndn))
+  })
+  rownames(nn) <- c("up","dn")
+  par(mar = c(8.1, 4.1, 4.1, 2.1))
+  barplot(nn[1,],col="blue",beside = TRUE, border=TRUE,ylim=c(min(nn),max(nn)) , las=2)
+  barplot(nn[2,],add=TRUE,col="red",names.arg = "", ylab="", yaxt="n")
+  mtext("blue=up,red=down")
+  par(mar = c(5.1, 4.1, 4.1, 2.1))
+}
+
+myeuler <- function(l) {
+  ups <- lapply(l,function(x) { rownames(subset(x,padj<0.05 & log2FoldChange>0) )})
+  dns <- lapply(l,function(x) { rownames(subset(x,padj<0.05 & log2FoldChange<0) )})
+  names(ups) <- paste(names(ups),"up")
+  names(dns) <- paste(names(dns),"dn")
+  ll <- c(ups,dns)
+  plot(euler(ll),quantities = TRUE)
+}
+
+```
+
+## DE results
+
+### Unadjusted for clinical covariates
+
+#### Unstratified, unadjusted
+
+* crp_t0
+* crp_eos
+* crp_pod1
+* avb_t0
+* avb_eos
+* avb_pod1
+
+```{r,l1_basic_charts}
+
+l1 <- list("crp_t0"=crp_t0, "crp_eos"=crp_eos, "crp_pod1"=crp_pod1,
+  "avb_t0"=avb_t0,"avb_eos"=avb_eos,"avb_pod1"=avb_pod1 )
+
+lapply(1:length(l1),function(i) {
+  volcanoplot(x=l1[[i]], title=names(l1)[[i]])
+  smearplot(x=l1[[i]], title=names(l1)[[i]])
+  head(x,50) |>
+    kbl(caption = paste(names(l1)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F)
+} )
+
+debar(l1) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0"=crp_t0,"avb_t0"=avb_t0))
+myeuler(list("crp_eos"=crp_eos,"avb_eos"=avb_eos))
+myeuler(list("crp_pod1"=crp_pod1,"avb_pod1"=avb_pod1))
+
+```
+
+#### Stratified, unadjusted
+
+* crp_t0_a
+* crp_t0_b
+* crp_eos_a
+* crp_eos_b
+* crp_pod1_a
+* crp_pod1_b
+* avb_crplo_t0
+* avb_crphi_t0
+* avb_crplo_eos
+* avb_crphi_eos
+* avb_crplo_pod1
+* avb_crphi_pod1
+
+```{r,l2_basic_charts}
+
+l2 <- list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,
+  "crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,
+  "crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,
+  "avb_crplo_t0"=avb_crplo_t0, "avb_crphi_t0"= avb_crphi_t0,
+  "avb_crplo_eos"=avb_crplo_eos, "avb_crphi_eos"=avb_crphi_eos,
+  "avb_crplo_pod1"=avb_crplo_pod1, "avb_crphi_pod1"=avb_crphi_pod1)
+
+lapply(1:length(l2),function(i) {
+  volcanoplot(x=l2[[i]], title=names(l2)[[i]])
+  smearplot(x=l2[[i]], title=names(l2)[[i]])
+  head(x,50) |>
+    kbl(caption = paste(names(l2)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F)
+} )
+
+debar(l2) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,"avb_crplo_t0"=avb_crplo_t0, "avb_crphi_t0"= avb_crphi_t0))
+myeuler(list("crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,"avb_crplo_eos"=avb_crplo_eos, "avb_crphi_eos"=avb_crphi_eos))
+myeuler(list("crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,"avb_crplo_pod1"=avb_crplo_pod1, "avb_crphi_pod1"=avb_crphi_pod1))
+
+```
+
+### Adjusted for clinical covariates
+
+#### Unstratified, adjusted
+
+* crp_t0_adj
+* crp_eos_adj
+* crp_pod1_adj
+* avb_t0_adj
+* avb_eos_adj
+* avb_pod1_adj
+
+```{r,l3_basic_charts}
+
+l3 <- list("crp_t0_adj"=crp_t0_adj, "crp_eos_adj"=crp_eos_adj, "crp_pod1_adj"=crp_pod1_adj,
+  "avb_t0_adj"=avb_t0_adj,"avb_eos_adj"=avb_eos_adj,"avb_pod1_adj"=avb_pod1_adj )
+
+lapply(1:length(l3),function(i) {
+  volcanoplot(x=l3[[i]], title=names(l3)[[i]])
+  smearplot(x=l3[[i]], title=names(l3)[[i]])
+  head(x,50) |>
+    kbl(caption = paste(names(l3)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F)
+} )
+
+debar(l3) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_adj"=crp_t0_adj,"avb_t0_adj"=avb_t0_adj))
+myeuler(list("crp_eos_adj"=crp_eos_adj,"avb_eos_adj"=avb_eos_adj))
+myeuler(list("crp_pod1_adj"=crp_pod1_adj,"avb_pod1_adj"=avb_pod1_adj))
+
+```
+
+#### Stratified, adjusted
+
+* crp_t0_a_adj
+* crp_t0_b_adj
+* crp_eos_a_adj
+* crp_eos_b_adj
+* crp_pod1_a_adj
+* crp_pod1_b_adj
+* avb_crplo_t0_adj
+* avb_crphi_t0_adj
+* avb_crplo_eos_adj
+* avb_crphi_eos_adj
+* avb_crplo_pod1_adj
+* avb_crphi_pod1_adj
+
+```{r,l4_basic_charts}
+
+l4 <- list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
+  "crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
+  "crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
+  "avb_crplo_t0_adj"=avb_crplo_t0_adj, "avb_crphi_t0_adj"= avb_crphi_t0_adj,
+  "avb_crplo_eos_adj"=avb_crplo_eos_adj, "avb_crphi_eos_adj"=avb_crphi_eos_adj,
+  "avb_crplo_pod1_adj"=avb_crplo_pod1_adj, "avb_crphi_pod1_adj"=avb_crphi_pod1_adj)
+
+lapply(1:length(l4),function(i) {
+  volcanoplot(x=l2[[i]], title=names(l2)[[i]])
+  smearplot(x=l2[[i]], title=names(l2)[[i]])
+  head(x,50) |>
+    kbl(caption = paste(names(l2)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F)
+} )
+
+debar(l4) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
+  "avb_crplo_t0_adj"=avb_crplo_t0_adj, "avb_crphi_t0_adj"= avb_crphi_t0_adj))
+
+myeuler(list("crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
+  "avb_crplo_eos_adj"=avb_crplo_eos_adj, "avb_crphi_eos_adj"=avb_crphi_eos_adj))
+
+myeuler(list("crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
+  "avb_crplo_pod1_adj"=avb_crplo_pod1_adj, "avb_crphi_pod1_adj"=avb_crphi_pod1_adj))
+
+```
+## Session information
+
+For reproducibility
+
+```{r,session}
+
+sessionInfo()
+
+```
+
