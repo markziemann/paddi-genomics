@@ -40,7 +40,8 @@ load("qc.Rds")
 
 ```{r,geneset}
 
-reactome <- mitch::gmt_import("ReactomePathways_30oct24.gmt")
+#reactome <- mitch::gmt_import("ReactomePathways_30oct24.gmt")
+go <- mitch::gmt_import("c5.go.v2024.1.Hs.symbols.gmt")
 
 ```
 
@@ -58,7 +59,7 @@ gt[,1] <- rownames(gt)
 
 ## Individual contrast analysis unstratified
 
-Start with Reactome
+Start with GO gene sets
 
 Firstly we do the unstratified contrasts.
 
@@ -75,9 +76,9 @@ de <- crp_t0_adj
 myname <- "crp_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -90,9 +91,9 @@ de <- crp_eos_adj
 myname <- "crp_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -105,9 +106,9 @@ de <- crp_pod1_adj
 myname <- "crp_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -128,7 +129,7 @@ l1 <- list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj,
 
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
 
-mm1 <- mitch_calc(x=m1,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
 top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
 top <- top[,c(1,4:9)]
 rownames(top) <- top[,1]
@@ -139,7 +140,7 @@ colfunc <- colorRampPalette(c("blue", "white", "red"))
 heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
     margins = c(6,25), cexRow=0.6, cexCol=0.8 )
 
-as.matrix(top) |> kbl(caption="Top Reactomes in multi enrichment analysis") |> kable_paper("hover", full_width = F)
+as.matrix(top) |> kbl(caption="Top GOs in multi enrichment analysis") |> kable_paper("hover", full_width = F)
 
 ```
 
@@ -164,9 +165,9 @@ de <- crp_t0_a_adj
 myname <- "crp_t0_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -179,9 +180,9 @@ de <- crp_t0_b_adj
 myname <- "crp_t0_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -194,9 +195,9 @@ de <- crp_eos_a_adj
 myname <- "crp_eos_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -209,9 +210,9 @@ de <- crp_eos_b_adj
 myname <- "crp_eos_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -224,9 +225,9 @@ de <- crp_pod1_a_adj
 myname <- "crp_pod1_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -239,9 +240,9 @@ de <- crp_pod1_b_adj
 myname <- "crp_pod1_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -254,9 +255,9 @@ de <- avb_crplo_t0_adj
 myname <- "avb_crplo_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -269,9 +270,9 @@ de <- avb_crphi_t0_adj
 myname <- "avb_crphi_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -284,9 +285,9 @@ de <- avb_crplo_eos_adj
 myname <- "avb_crplo_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -299,9 +300,9 @@ de <- avb_crphi_eos_adj
 myname <- "avb_crphi_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -314,9 +315,9 @@ de <- avb_crplo_pod1_adj
 myname <- "avb_crplo_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -329,9 +330,9 @@ de <- avb_crphi_pod1_adj
 myname <- "avb_crphi_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
-mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
 mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
-mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
 vec <- sort(vec)
@@ -362,7 +363,7 @@ l2 <- list("crp_t0_a"=crp_t0_a_adj,
 
 m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
 
-mm2 <- mitch_calc(x=m2,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
 top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
 top <- top[,c(1,4:15)]
 rownames(top) <- top[,1]
@@ -375,7 +376,7 @@ heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
     margins = c(7,20), cexRow=0.6, cexCol=0.7 )
 
 as.matrix(top) |>
-  kbl(caption="Top Reactomes in multi enrichment analysis") |>
+  kbl(caption="Top GOs in multi enrichment analysis") |>
   kable_paper("hover", full_width = F)
 
 ```
