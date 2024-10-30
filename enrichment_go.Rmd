@@ -36,12 +36,13 @@ load("qc.Rds")
 
 ```
 
-## Load reactome gene sets
+## Load GO gene sets
 
 ```{r,geneset}
 
 #reactome <- mitch::gmt_import("ReactomePathways_30oct24.gmt")
 go <- mitch::gmt_import("c5.go.v2024.1.Hs.symbols.gmt")
+names(go) <- gsub("_"," ",names(go))
 
 ```
 
@@ -119,7 +120,7 @@ mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite
 
 ```
 
-Multi-contrast enrichment anslysis.
+Multi-contrast enrichment analysis.
 
 ```{r,multi1}
 
@@ -142,7 +143,49 @@ heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
 
 as.matrix(top) |> kbl(caption="Top GOs in multi enrichment analysis") |> kable_paper("hover", full_width = F)
 
+mitch_report(res=mm1,outfile="multigo_all_mitchreport.html",overwrite=TRUE)
+
 ```
+
+This might work better if we work on each timepoint separately.
+
+```{r,multi1_t0}
+
+l1 <- list("crp_t0_adj"=crp_t0_adj, "avb_t0_adj"=avb_t0_adj)
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:5)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+as.matrix(top) |> kbl(caption="Top GOs in multi enrichment analysis at t0") |> kable_paper("hover", full_width = F)
+mitch_report(res=mm1,outfile="multigo_t0_mitchreport.html",overwrite=TRUE)
+
+l1 <- list("crp_eos_adj"=crp_eos_adj, "avb_eos_adj"=avb_eos_adj)
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:5)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+as.matrix(top) |> kbl(caption="Top GOs in multi enrichment analysis at EOS") |> kable_paper("hover", full_width = F)
+mitch_report(res=mm1,outfile="multigo_eos_mitchreport.html",overwrite=TRUE)
+
+l1 <- list("crp_pod1_adj"=crp_pod1_adj, "avb_pod1_adj"=avb_pod1_adj)
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:5)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+as.matrix(top) |> kbl(caption="Top GOs in multi enrichment analysis at POD1") |> kable_paper("hover", full_width = F)
+mitch_report(res=mm1,outfile="multigo_eos_mitchreport.html",overwrite=TRUE)
+
+```
+
 
 ## Individual contrast analysis stratified
 
@@ -378,6 +421,65 @@ heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
 as.matrix(top) |>
   kbl(caption="Top GOs in multi enrichment analysis") |>
   kable_paper("hover", full_width = F)
+
+mitch_report(res=mm2,outfile="multigostratified_all_mitchreport.html",overwrite=TRUE)
+
+```
+
+This might work better if we work on each timepoint separately.
+
+```{r,multi2_t0}
+
+l2 <- list("crp_t0_a"=crp_t0_a_adj, "crp t0 b"=crp_t0_b_adj,
+  "avb crplo t0"=avb_crplo_t0_adj, "avb crphi t0"=avb_crphi_t0_adj)
+m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
+mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:7)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+colnames(top) <- gsub("^s\\.","",colnames(top))
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
+    margins = c(7,20), cexRow=0.6, cexCol=0.7 )
+as.matrix(top) |>
+  kbl(caption="Top GOs in multi enrichment analysis stratified t0") |>
+  kable_paper("hover", full_width = F)
+#mitch_report(res=mm2,outfile="multigostratified_t0_mitchreport.html",overwrite=TRUE)
+
+l2 <- list("crp_eos_a"=crp_eos_a_adj, "crp eos b"=crp_eos_b_adj,
+  "avb crplo eos"=avb_crplo_eos_adj, "avb crphi eos"=avb_crphi_eos_adj)
+m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
+mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:7)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+colnames(top) <- gsub("^s\\.","",colnames(top))
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
+    margins = c(7,20), cexRow=0.6, cexCol=0.7 )
+as.matrix(top) |>
+  kbl(caption="Top GOs in multi enrichment analysis stratified EOS") |>
+  kable_paper("hover", full_width = F)
+#mitch_report(res=mm2,outfile="multigostratified_eos_mitchreport.html",overwrite=TRUE)
+
+l2 <- list("crp_pod1_a"=crp_pod1_a_adj, "crp pod1 b"=crp_pod1_b_adj,
+  "avb crplo pod1"=avb_crplo_pod1_adj, "avb crphi pod1"=avb_crphi_pod1_adj)
+m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
+mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:7)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+colnames(top) <- gsub("^s\\.","",colnames(top))
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
+    margins = c(7,20), cexRow=0.6, cexCol=0.7 )
+as.matrix(top) |>
+  kbl(caption="Top GOs in multi enrichment analysis stratified POD1") |>
+  kable_paper("hover", full_width = F)
+#mitch_report(res=mm2,outfile="multigostratified_pod1_mitchreport.html",overwrite=TRUE)
 
 ```
 
