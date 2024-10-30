@@ -1,0 +1,391 @@
+---
+title: "PADDI enrichment analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+Let's do some enrichment analysis.
+
+```{r,libraries}
+
+suppressPackageStartupMessages({
+  library("gplots")
+  library("reshape2")
+  library("WGCNA")
+  library("dplyr")
+  library("DESeq2")
+  library("mitch")
+  library("MASS")
+  library("kableExtra")
+  library("ggplot2")
+  library("eulerr")
+  library("DT")
+  library("xlsx")
+})
+
+load("qc.Rds")
+
+```
+
+## Load reactome gene sets
+
+```{r,geneset}
+
+reactome <- mitch::gmt_import("ReactomePathways_30oct24.gmt")
+
+```
+
+## Gene table
+
+```{r,genetable}
+
+gt <- read.table("../ref/gencode.v38.genetable.tsv")
+
+rownames(gt) <- paste(gt[,1],gt[,2])
+
+gt[,1] <- rownames(gt)
+
+```
+
+## Individual contrast analysis unstratified
+
+Start with Reactome
+
+Firstly we do the unstratified contrasts.
+
+* crp_t0_adj
+* crp_eos_adj
+* crp_pod1_adj
+* avb_t0_adj
+* avb_eos_adj
+* avb_pod1_adj
+
+```{r,mitch1}
+
+de <- crp_t0_adj
+myname <- "crp_t0_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_eos_adj
+myname <- "crp_eos_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_pod1_adj
+myname <- "crp_pod1_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+```
+
+Multi-contrast enrichment anslysis.
+
+```{r,multi1}
+
+l1 <- list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj,
+  "crp_pod1_adj"=crp_pod1_adj,"avb_t0_adj"=avb_t0_adj,
+  "avb_eos_adj"=avb_eos_adj,"avb_pod1_adj"=avb_pod1_adj)
+
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+
+mm1 <- mitch_calc(x=m1,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:9)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
+    margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+
+as.matrix(top) |> kbl(caption="Top Reactomes in multi enrichment analysis") |> kable_paper("hover", full_width = F)
+
+```
+
+## Individual contrast analysis stratified
+
+* crp_t0_a_adj
+* crp_t0_b_adj
+* crp_eos_a_adj
+* crp_eos_b_adj
+* crp_pod1_a_adj
+* crp_pod1_b_adj
+* avb_crplo_t0_adj
+* avb_crphi_t0_adj
+* avb_crplo_eos_adj
+* avb_crphi_eos_adj
+* avb_crplo_pod1_adj
+* avb_crphi_pod1_adj
+
+```{r,mitch2}
+
+de <- crp_t0_a_adj
+myname <- "crp_t0_a_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_t0_b_adj
+myname <- "crp_t0_b_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_eos_a_adj
+myname <- "crp_eos_a_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_eos_b_adj
+myname <- "crp_eos_b_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_pod1_a_adj
+myname <- "crp_pod1_a_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- crp_pod1_b_adj
+myname <- "crp_pod1_b_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crplo_t0_adj
+myname <- "avb_crplo_t0_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crphi_t0_adj
+myname <- "avb_crphi_t0_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crplo_eos_adj
+myname <- "avb_crplo_eos_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crpho_eos_adj
+myname <- "avb_crpho_eos_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crplo_pod1_adj
+myname <- "avb_crplo_pod1_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+de <- avb_crphi_pod1_adj
+myname <- "avb_crphi_pod1_adj"
+
+m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+mres <- mitch_calc(x=m,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop |> kbl(caption=paste(myname,"Reactome")) |> kable_paper("hover", full_width = F)
+vec <- mtop$s.dist
+names(vec) <- mtop$set
+vec <- sort(vec)
+par( mar = c(5.1, 25.1, 4.1, 2.1) )
+barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
+par( mar = c(5.1, 4.1, 4.1, 2.1) )
+mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
+
+```
+
+
+Multi-contrast enrichment anslysis.
+
+```{r,multi2}
+
+l2 <- list("crp_t0_a"=crp_t0_a_adj,
+"crp t0 b"=crp_t0_b_adj,
+"crp eos a"=crp_eos_a_adj,
+"crp eos b"=crp_eos_b_adj,
+"crp _pod1 a"=crp_pod1_a_adj,
+"crp pod1 b"=crp_pod1_b_adj,
+"avb crplo t0"=avb_crplo_t0_adj,
+"avb crphi t0"=avb_crphi_t0_adj,
+"avb crplo eos"=avb_crplo_eos_adj,
+"avb crphi eos"=avb_crphi_eos_adj,
+"avb crplo pod1"=avb_crplo_pod1_adj,
+"avb crphi pod1"=avb_crphi_pod1_adj)
+
+m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
+
+mm2 <- mitch_calc(x=m2,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- top[,c(1,4:15)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+colnames(top) <- gsub("^s\\.","",colnames(top))
+
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
+    margins = c(7,20), cexRow=0.6, cexCol=0.7 )
+
+as.matrix(top) |>
+  kbl(caption="Top Reactomes in multi enrichment analysis") |>
+  kable_paper("hover", full_width = F)
+
+```
+
+## Session information
+
+For reproducibility
+
+```{r,sessioninfo}
+
+sessionInfo()
+
+```
