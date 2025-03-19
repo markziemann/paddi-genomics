@@ -1,0 +1,2469 @@
+---
+title: "PADDI RNA expression analysis - Timecourse Analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+Let's QC this data.
+
+```{r,libraries}
+
+suppressPackageStartupMessages({
+  library("gplots")
+  library("reshape2")
+  library("WGCNA")
+  library("dplyr")
+  library("DESeq2")
+  library("mitch")
+  library("MASS")
+  library("eulerr")
+})
+
+```
+
+## Multi-qc results
+
+Please have a look at the multiQC report.
+Here are a few key points:
+
+* Skewer trimming resulted in loss of only a tiny number of bases.
+This indicates the sequence quality is very high.
+
+* Fastqc results showing the number of unique and duplicate reads indicates a few samples with <10M unique reads.
+
+* Per seqence GC content showed an unusual profile for two samples.
+PG1423-EOS R1 and R2 had GC profile max at 40% compared to the mean.
+PG2090-EOS also showed an unusual pattern with underrepresented low GC%.
+
+* Sequence duplication levels were elevated for some fastq files.
+Here are the files of concern, with <20% unique reads:
+PG3627-POD1_S86_R1_001
+PG3627-POD1_S86_R2_001
+PG3609-T0_S317_R1_001
+PG2090-EOS_S134_R1_001
+PG2090-EOS_S134_R2_001
+
+* There were two files with overrepresented sequences: PG2090-EOS R1 and R2. Others are okay.
+
+* Adapter content was very low which is good.
+
+The fastq files were also checked with validatefastq-assembly which looks for signs of file corruption which can occur in large data transfers.
+No problematic files were detected.
+
+## rRNA amount
+
+Ribosomal RNA carryover can be a source of noise.
+The proportion should be <10% and there were a few samples in excess of this including PG2020-EOS, PG815-EOS, PG1452-EOS and PG702-POD1.
+
+```{r,rrna}
+
+rrna <- read.table("rrna_stats.txt")
+rrna <- rrna[,c(1,5)]
+rrna$V1 <- sapply(strsplit(rrna$V1,"\\."),"[[",1)
+rrna$V5 <- gsub("\\(","",rrna$V5)
+rrna$V5 <- gsub("%","",rrna$V5)
+rrna$V5 <- as.numeric(rrna$V5)
+str(rrna)
+
+rrna2 <- rrna[,2]
+names(rrna2) <- rrna[,1]
+
+par(mar=c(5,8,3,1))
+barplot(rrna2,horiz=TRUE,las=1,cex.names=0.5,main="rRNA carryover")
+rrna2 <- rrna2[order(-rrna2)]
+barplot(head(rrna2,20),horiz=TRUE,las=1,cex.names=0.6,main="rRNA carryover")
+
+```
+
+## Load the data
+
+```{r,load}
+
+tmp <- read.table("3col.tsv.gz",header=FALSE)
+x <- as.matrix(acast(tmp, V2~V1, value.var="V3", fun.aggregate = sum))
+x <- as.data.frame(x)
+accession <- sapply((strsplit(rownames(x),"\\|")),"[[",2)
+symbol<-sapply((strsplit(rownames(x),"\\|")),"[[",6)
+x$geneid <- paste(accession,symbol)
+xx <- aggregate(. ~ geneid,x,sum)
+rownames(xx) <- xx$geneid
+colnames <- gsub("T0R","T0",colnames(xx))
+xx$geneid = NULL
+xx <- round(xx)
+xx[1:10,1:6]
+
+```
+
+## Number of reads per sample
+
+Let's look at the number of reads per sample
+
+Most samples were in the range of 25-30 million assigned reads.
+Just 2 samples had less than 20 million reads: PG1452-EOS and PG1423-EOS.
+The maximum read count was about 40 million for PG7072-EOS.
+
+```{r,numreads}
+
+xxcs <- colSums(xx)
+par(mar=c(5,8,3,1))
+barplot(xxcs,horiz=TRUE,las=1,main="no. reads per sample")
+barplot(head(xxcs[order(xxcs)],20),horiz=TRUE,las=1,main="lowest no. reads per sample")
+barplot(head(xxcs[order(-xxcs)],20),horiz=TRUE,las=1,main="highest no. reads per sample")
+
+```
+
+## MDS
+
+Some outliers are apparent.
+
+PG2090-EOS to the left of the chart - this is clearly the effect of rRNA carryover.
+Other samples over to the left of the chart include PG815-EOS, PG145-EOS and PG702-POD1 which all have elevated rRNA.
+
+```{r,mds1}
+
+heatmap.2( cor(xx),trace="none",scale="none")
+
+mds <- cmdscale(dist(t(xx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) ,
+  type = "p", col="gray", pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+text(mds, labels=rownames(mds), cex=0.8)
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0, orange=POD1, pink=EOS")
+
+```
+
+Exclude PG2090-EOS and repeat the analysis.
+
+```{r,mds2}
+
+xx <- xx[,grep("PG2090-EOS",colnames(xx),invert=TRUE)]
+
+mds <- cmdscale(dist(t(xx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) ,
+  type = "p", col="gray", pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+text(mds, labels=rownames(mds), cex=0.8)
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0, orange=POD1, pink=EOS")
+
+```
+
+In the MDS plot with PG2090-EOS removed, there appears to be some separation of T0, POD1 and EOS samples.
+POD1 (orange) are more towards the upper side of the chart and T0 (blue) are toward the bottom right.
+EOS (pink) are quite spread out.
+
+## Load patient info
+
+```{r,loadpatientinfo}
+
+xx <- xx[,order(colnames(xx))]
+
+ss <- read.csv("PADDIgenomicsData.csv")
+ss <- ss[order(ss$PG_number),]
+colnames(ss)
+str(ss)
+summary(ss)
+
+ss1 <- ss
+
+rownames(ss) <- paste(ss$PG_number,ss$timepoint,sep="-")
+
+dim(ss)
+
+ss$ageCS <- scale(ss$ageD)
+ss$sexD <- as.numeric(factor(ss$sexD))
+ss$ethnicityCAT <- ss$ethnicityD
+ss$ethnicityD <- as.numeric(factor(ss$ethnicityD))
+ss$current_smokerD <- as.numeric(factor(ss$current_smokerD))
+ss$diabetes_typeD <- as.numeric(factor(ss$diabetes_typeD))
+ss$daily_insulinD <- as.numeric(factor(ss$daily_insulinD))
+ss$oral_hypoglycemicsD <- as.numeric(factor(ss$oral_hypoglycemicsD))
+ss$crp_preopD <- as.numeric(gsub("<5","2.5",gsub("<1","0.5",gsub("<1.0","0.5",ss$crp_preopD))))
+ss$surgery_dominantD <- as.numeric(factor(ss$surgery_dominantD))
+ss$wound_typeOP <- as.numeric(factor(ss$wound_typeOP))
+ss$risk_cat <- as.numeric(factor(ss$risk_cat,levels=c("Low","Moderate","High")))
+ss$wound_type_cat <- as.numeric(factor(ss$wound_type_cat))
+ss$anyDex <- as.numeric(factor(ss$anyDex))
+
+ss$bmi_cat <- as.numeric(factor(ss$bmi_cat,
+  levels=c("Underweight [BMI<18.5]","Normal [18.5 to <25]",
+  "Overweight [25 to <30]","Obese [30 to <40]","Super obese [40+]")))
+
+ss <- ss[,c("PG_number","sexD","ageD","ageCS","weightD","asaD","heightD","ethnicityCAT","ethnicityD",
+  "current_smokerD","diabetes_typeD","daily_insulinD","creatinine_preopD",
+  "surgery_dominantD","wound_typeOP","HbA1c","bmi","revised_whodas_preop",
+  "neut_lymph_ratio_d0","neut_lymph_ratio_d1","neut_lymph_ratio_d2","ab_noninfection",
+  "risk","risk_cat","bmi_cat","wound_type_cat","duration_sx","anyDex","treatment_group",
+  "deltacrp","crp_group")]
+
+ss <- ss[order(rownames(ss)),]
+
+ss_t0 <- ss
+ss_eos <- ss
+ss_pod1 <- ss
+
+ss_t0$timepoint <- "T0"
+ss_eos$timepoint <- "EOS"
+ss_pod1$timepoint <- "POD1"
+
+rownames(ss_t0) <- paste(ss_t0$PG_number,"T0",sep="-")
+rownames(ss_eos) <- paste(ss_t0$PG_number,"EOS",sep="-")
+rownames(ss_pod1) <- paste(ss_t0$PG_number,"POD1",sep="-")
+
+ss <- rbind(ss_t0, ss_eos, ss_pod1)
+
+rownames(ss) <- paste(ss$PG_number,ss$timepoint,sep="-")
+
+xt0 <- xx[,grep("T0",colnames(xx))]
+xpod1 <- xx[,grep("POD1",colnames(xx))]
+xeos <- xx[,grep("EOS",colnames(xx))]
+
+xt0f <- xt0[rowMeans(xt0)>=10,]
+xpod1f <- xpod1[rowMeans(xpod1)>=10,]
+xeosf <- xeos[rowMeans(xeos)>=10,]
+
+dim(xt0f)
+dim(xpod1f)
+dim(xeosf)
+
+ss_t0 <- ss_t0[which(rownames(ss_t0) %in% colnames(xt0)),]
+ss_pod1 <- ss_pod1[which(rownames(ss_pod1) %in% colnames(xpod1)),]
+ss_eos <- ss_eos[which(rownames(ss_eos) %in% colnames(xeos)),]
+
+colnames(xt0) %in% rownames(ss_t0)
+colnames(xpod1) %in% rownames(ss_pod1)
+colnames(xeos) %in% rownames(ss_eos)
+
+rownames(ss_t0) %in% colnames(xt0)
+rownames(ss_pod1) %in% colnames(xpod1)
+rownames(ss_eos) %in% colnames(xeos)
+
+xxf <- xx[rowMeans(xx)>=10,]
+xxf <- xxf[,order(colnames(xxf))]
+
+ss1 <- ss
+ss1 <- ss1[which(rownames(ss1) %in% colnames(xx)),]
+
+```
+
+## MDS3
+
+```{r,mds3}
+
+mds <- cmdscale(dist(t(xx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+shp <- ss1$crp_group + 14
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=shp, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1,sq=lowCRP,di=highCRP")
+
+```
+
+## Blood composition
+
+```{r,blood1}
+
+xn <- xx
+gt <- as.data.frame(sapply(strsplit(rownames(xn)," "),"[[",2) )
+rownames(gt) <- rownames(xx)
+colnames(gt) = "genesymbol"
+gt$geneID <- rownames(xx)
+blood <- read.table("https://raw.githubusercontent.com/giannimonaco/ABIS/master/data/sigmatrixRNAseq.txt")
+blood2 <- merge(gt,blood,by.x="genesymbol",by.y=0)
+blood2 <- blood2[which(!duplicated(blood2$genesymbol)),]
+rownames(blood2) <- blood2$geneID
+blood2 <- blood2[,c(3:ncol(blood2))]
+genes <- intersect(rownames(xx), rownames(blood2))
+dec <- apply(xx[genes, , drop=F], 2, function(x) coef(rlm( as.matrix(blood2[genes,]), x, maxit =100 ))) *100
+dec <- t(dec/colSums(dec)*100)
+dec <- signif(dec, 3)
+# remove negative values
+dec2 <- t(apply(dec,2,function(x) { mymin=min(x) ; if (mymin<0) { x + (mymin * -1) } else { x } } ))
+dec2 <- apply(dec2,2,function(x) {x / sum(x) *100} )
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+heatmap.2( dec2, col=colfunc(25),scale="row",
+ trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
+heatmap.2( dec2, col=colfunc(25),scale="none",
+ trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
+par(mar=c(5,10,3,1))
+boxplot(t(dec2[order(rowMeans(dec2)),]),horizontal=TRUE,las=1, xlab="estimated cell proportion (%)")
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+heatmap.2( cor(dec2),trace="none",scale="none")
+heatmap.2( cor(t(dec2)),trace="none",scale="none", margins = c(8,8))
+par(mar=c(5,10,3,1))
+barplot(apply(dec2,1,sd),horiz=TRUE,las=1,xlab="SD of cell proportions (%)")
+which(apply(dec2,1,sd)>4)
+
+```
+
+Based on this analysis we can begin with correction of:
+
+* Monocytes.C
+* NK
+* T.CD8.Memory
+* T.CD4.Naive
+* Neutrophils.LD
+
+According to the correlation heatmap, these are not strongly correlated.
+
+Now look at how the cell proportions change over time.
+
+```{r,cells2}
+
+ct0 <- dec2[,grep("-T0",colnames(dec2))]
+ceos <- dec2[,grep("-EOS",colnames(dec2))]
+cpod1 <- dec2[,grep("-POD1",colnames(dec2))]
+par(mar=c(5,10,3,1))
+boxplot(t(ct0),horizontal=TRUE,las=1, xlab="estimated cell proportion (%)",main="T0")
+boxplot(t(ceos),horizontal=TRUE,las=1, xlab="estimated cell proportion (%)",main="EOS")
+boxplot(t(cpod1),horizontal=TRUE,las=1, xlab="estimated cell proportion (%)",main="POD1")
+
+sscell <- as.data.frame(t(dec2))
+sscell_t0 <- sscell[grep("-T0",rownames(sscell)),]
+sscell_eos <- sscell[grep("-EOS",rownames(sscell)),]
+sscell_pod1 <- sscell[grep("POD1",rownames(sscell)),]
+
+```
+
+Now look at how cell types associate with the PCAs.
+
+```{r,cellpca}
+
+#xt0f xeosf xpod1f
+#sscell_t0 sscell_eos sscell_pod1
+
+## T0
+mx <- xt0f
+
+ss2 <- sscell_t0
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @T0: Top principal components"))
+
+## EOS
+mx <- xeosf
+
+ss2 <- sscell_eos
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @EOS: Top principal components"))
+
+## POD1
+mx <- xpod1f
+
+ss2 <- sscell_pod1
+
+pca <- prcomp(t(mx),center = TRUE, scale = TRUE,retx=TRUE)
+
+loadings = pca$x
+
+plot(pca,type="lines",col="blue")
+nGenes <- nrow(mx)
+nSamples <- ncol(mx)
+datTraits <- ss2
+moduleTraitCor <- cor(loadings[,1:8], datTraits, use = "p")
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples)
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+  signif(moduleTraitPvalue, 1), ")", sep = "")
+
+dim(textMatrix) = dim(moduleTraitCor)
+
+labeledHeatmap(Matrix = t(moduleTraitCor),
+  xLabels = colnames(loadings)[1:ncol(t(moduleTraitCor))],
+  yLabels = names(datTraits), colorLabels = FALSE, colors = blueWhiteRed(6),
+  textMatrix = t(textMatrix), setStdMargins = FALSE, cex.text = 0.5,
+  cex.lab.y = 0.6, zlim = c(-0.45,0.45),
+  main = paste("PCA-cell relationships @POD1: Top principal components"))
+
+```
+
+The conclusion here is that the cell types correlate strongly with the principal components.
+The good news is that we have selected the cell types that associate the strongest, so we can
+correct for their contribution.
+
+## Differential expression across time
+
+Specific PCAs for key clinical parameters:
+
+* wound type
+* surg duration
+* ethnicity
+* age
+* sex
+
+And blood composition:
+
+* Monocytes.C
+* NK
+* T.CD8.Memory
+* T.CD4.Naive
+* Neutrophils.LD
+
+And ones we didn't include:
+
+* bmi
+* asaD
+* smoker
+* diabetes_typeD
+
+TODO:
+
+* age data centred and scaled
+
+* ethnicity categories unordered
+
+## Overview
+
+Treat timepoints as unordered factors using LRT test stat
+
+1. Timecourse in low CRP group
+
+2. Timecourse in high CRP group
+
+3. Timecourse in low CRP group and treatment group A
+
+4. Timecourse in low CRP group and treatment group B
+
+5. Timecourse in high CRP group and treatment group A
+
+6. Timecourse in high CRP group and treatment group B
+
+### Timecourse in low CRP group
+
+```{r,tc_crplo}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_adj <- dge
+
+```
+
+### Timecourse in high CRP group
+
+```{r,tc_crphi}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi_adj <- dge
+
+```
+
+### Timecourse in low CRP group and treatment group A
+
+treatment_group==1
+
+```{r,tc_crplo_a}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==1 & treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_a <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_a_adj <- dge
+
+```
+
+### Timecourse in low CRP group and treatment group B
+
+treatment_group==2
+
+```{r,tc_crplo_b}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==1 & treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_b <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_b_adj <- dge
+
+```
+
+### Timecourse in high CRP group and treatment group A
+
+treatment_group==1
+
+```{r,tc_crphi_a}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==4 & treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi_a <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi_a_adj <- dge
+
+top <- as.matrix(dge[1:30,grep("PG",colnames(dge))])
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+tp <- sapply(strsplit(colnames(top),"-"),"[[",2)
+colsidecols <- gsub("POD1","darkred",gsub("EOS","chocolate1",gsub("T0","darkgreen",tp)))
+
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="row",
+    margins = c(6,12), cexRow=0.7, cexCol=0.1, ColSideColors=colsidecols )
+
+nsig <- nrow(subset(dge,padj<0.05))
+#top <- as.matrix(tc_hi_b_adj[1:nsig,grep("PG",colnames(tc_hi_b_adj))])
+top <- as.matrix(dge[1:1000,grep("PG",colnames(dge))])
+rowmeans <- rowMeans(top)
+mmean <- mean(rowmeans)
+topn <- top / rowmeans
+keep <- names(which(table(sapply(strsplit(colnames(topn),"-"),"[[",1))==3))
+keep <-c(paste(keep,"-T0",sep=""),paste(keep,"-EOS",sep=""),paste(keep,"-POD1",sep="") )
+topn <- topn[,which(colnames(topn) %in% keep)]
+distClust <-as.dist(1-cor(t(topn), method="spearman"))
+hClust <- hclust(distClust , method="complete")
+mycl <- cutree(hClust, h=max(hClust$height/1.4))
+length(unique(mycl)) #mycl_length
+tp <- sapply(strsplit(colnames(topn),"-"),"[[",2)
+colsidecols <- gsub("POD1","darkred",gsub("EOS","chocolate1",gsub("T0","darkgreen",tp)))
+
+heatmap.2(as.matrix(topn),trace="none",col=colfunc(25),scale="row",
+    margins = c(6,12), cexRow=0.2, cexCol=0.1,
+    ColSideColors=colsidecols , RowSideColors=as.character(mycl) )
+
+lapply(min(mycl):max(mycl),function(i) {
+  dat <- topn[rownames(topn) %in% names(mycl[which(mycl==i)]),]
+  t0 <- rowMeans(dat[,grep("T0",colnames(dat))])
+  eos <- rowMeans(dat[,grep("EOS",colnames(dat))])
+  pod1 <- rowMeans(dat[,grep("POD1",colnames(dat))])
+  zz <- data.frame(t0,eos,pod1)
+  HEADER=paste("Cluster",i,"Members=",nrow(zz))
+  plot(unlist(zz[1,,drop=TRUE]),type="b",ylim=c(0.7,1.3),
+    xlab="Timepoint", ylab="Normalised expresion level",
+    main=HEADER)
+  lapply(2:nrow(zz),function(j) {
+    points(unlist(zz[j,,drop=TRUE]),type="b")
+  } )
+} )
+
+
+```
+
+### Timecourse in high CRP group and treatment group B
+
+treatment_group==2
+
+```{r,tc_crphi_b}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,crp_group==4 & treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi_b <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_hi_b_adj <- dge
+
+top <- as.matrix(dge[1:30,grep("PG",colnames(dge))])
+colfunc <- colorRampPalette(c("blue", "white", "red"))
+tp <- sapply(strsplit(colnames(top),"-"),"[[",2)
+colsidecols <- gsub("POD1","darkred",gsub("EOS","chocolate1",gsub("T0","darkgreen",tp)))
+
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="row",
+    margins = c(6,12), cexRow=0.7, cexCol=0.1, ColSideColors=colsidecols )
+
+nsig <- nrow(subset(dge,padj<0.05))
+#top <- as.matrix(tc_hi_b_adj[1:nsig,grep("PG",colnames(tc_hi_b_adj))])
+top <- as.matrix(dge[1:1000,grep("PG",colnames(dge))])
+rowmeans <- rowMeans(top)
+mmean <- mean(rowmeans)
+topn <- top / rowmeans
+keep <- names(which(table(sapply(strsplit(colnames(topn),"-"),"[[",1))==3))
+keep <-c(paste(keep,"-T0",sep=""),paste(keep,"-EOS",sep=""),paste(keep,"-POD1",sep="") )
+topn <- topn[,which(colnames(topn) %in% keep)]
+distClust <-as.dist(1-cor(t(topn), method="spearman"))
+hClust <- hclust(distClust , method="complete")
+mycl <- cutree(hClust, h=max(hClust$height/1.4))
+length(unique(mycl)) #mycl_length
+tp <- sapply(strsplit(colnames(topn),"-"),"[[",2)
+colsidecols <- gsub("POD1","darkred",gsub("EOS","chocolate1",gsub("T0","darkgreen",tp)))
+
+heatmap.2(as.matrix(topn),trace="none",col=colfunc(25),scale="row",
+    margins = c(6,12), cexRow=0.2, cexCol=0.1,
+    ColSideColors=colsidecols , RowSideColors=as.character(mycl) )
+
+lapply(min(mycl):max(mycl),function(i) {
+  dat <- topn[rownames(topn) %in% names(mycl[which(mycl==i)]),]
+  t0 <- rowMeans(dat[,grep("T0",colnames(dat))])
+  eos <- rowMeans(dat[,grep("EOS",colnames(dat))])
+  pod1 <- rowMeans(dat[,grep("POD1",colnames(dat))])
+  zz <- data.frame(t0,eos,pod1)
+  HEADER=paste("Cluster",i,"Members=",nrow(zz))
+  plot(unlist(zz[1,,drop=TRUE]),type="b",ylim=c(0.7,1.3),
+    xlab="Timepoint", ylab="Normalised expresion level",
+    main=HEADER)
+  lapply(2:nrow(zz),function(j) {
+    points(unlist(zz[j,,drop=TRUE]),type="b")
+  } )
+} )
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## STOP HERE
+
+```{r,crp_eos}
+
+blah()
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos_adj <- dge
+
+```
+
+### CRP low vs high at POD1
+
+```{r,crp_pod1}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1_adj <- dge
+
+```
+
+## Treatment group differences not stratified
+
+### Treatment A vs B at t0
+
+```{r,avb_t0}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_t0 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_t0_adj <- dge
+
+```
+
+### Treatment A vs B at EOS
+
+```{r,avb_eos}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_eos_adj <- dge
+
+```
+
+### Treatment A vs B at POD1
+
+```{r,avb_pod1}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_pod1_adj <- dge
+
+```
+
+## Treatment group differences stratified
+
+### Treatment A vs B t0 in CRP low group
+
+```{r,avb_crplo_t0}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_t0 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_t0_adj <- dge
+
+```
+
+### Treatment A vs B t0 in CRP high group
+
+```{r,avb_crphi_t0}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_t0 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_t0_adj <- dge
+
+```
+
+### Treatment A vs B EOS in CRP low group
+
+```{r,avb_crplo_eos}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_eos_adj <- dge
+
+```
+
+### Treatment A vs B EOS in CRP high group
+
+```{r,avb_crphi_eos}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_eos_adj <- dge
+
+```
+
+### Treatment A vs B POD1 in CRP low group
+
+```{r,avb_crplo_pod}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crplo_pod1_adj <- dge
+
+```
+
+### Treatment A vs B POD in CRP high group
+
+```{r,avb_crphi_pod}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + treatment_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+avb_crphi_pod1_adj <- dge
+
+```
+
+## CRP Group Comparisons statified
+
+### CRP low vs high at t=0 treatment group A
+
+```{r,crp_t0_A}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_t0_a <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_t0_a_adj <- dge
+
+```
+
+### CRP low vs high at t=0 treatment group B
+
+```{r,crp_t0_B}
+
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_t0_b <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_t0_b_adj <- dge
+
+```
+
+### CRP low vs high at EOS treatment group A
+
+```{r,crp_eos_A}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos_a <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos_a_adj <- dge
+
+```
+
+### CRP low vs high at EOS treatment group B
+
+```{r,crp_eos_B}
+
+mx <- xeosf
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos_b <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_eos_b_adj <- dge
+
+```
+
+### CRP low vs high at POD treatment group A
+
+```{r,crp_pod1_A}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1_a <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1_a_adj <- dge
+
+```
+
+### CRP low vs high at POD1 treatment group B
+
+```{r,crp_pod1_B}
+
+mx <- xpod1f
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1_b <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD + wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + crp_group )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+crp_pod1_b_adj <- dge
+
+```
+
+## Sex differences in low CRP group (not stratified for treatment group)
+
+SexD: 1=Female and 2=Male I confirmed with this expresion data
+
+### T0
+
+No correction for treatment group.
+
+```{r,FvM_lowcrp_t0}
+
+#load chromossome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xt0
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_t0 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_t0_adj <- dge
+
+dim(subset(mvf_lo_t0,padj<0.05))
+
+```
+
+### EOS
+
+No correction for treatment group.
+
+```{r,FvM_lowcrp_EOS}
+
+#load chromossome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xeos
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_eos_adj <- dge
+
+dim(subset(mvf_lo_eos,padj<0.05))
+
+```
+
+### POD1
+
+No correction for treatment group.
+
+```{r,FvM_lowcrp_POD}
+
+#load chromossome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xpod1
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,crp_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_lo_pod1_adj <- dge
+
+dim(subset(mvf_lo_pod1,padj<0.05))
+
+```
+
+## Sex differences in high CRP group (not stratified for treatment group)
+
+### T0
+
+No correction for treatment group.
+
+```{r,FvM_hicrp_t0}
+
+#load chromosome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xt0
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_t0 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_t0_adj <- dge
+
+dim(subset(mvf_hi_t0,padj<0.05))
+
+```
+
+### EOS
+
+No correction for treatment group.
+
+```{r,FvM_hicrp_eos}
+
+#load chromosome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xeos
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_eos,sscell_eos))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_eos <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_eos_adj <- dge
+
+dim(subset(mvf_hi_eos,padj<0.05))
+
+```
+
+### POD1
+
+No correction for treatment group.
+
+```{r,FvM_hicrp_pod1}
+
+#load chromosome2gene table
+chr2gene <- read.table("../ref/chr2gene.tsv")
+xyg <- subset(chr2gene,V1=="chrX" | V1=="chrY")
+
+mx <- xpod1
+
+dim(mx)
+mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+dim(mx)
+
+ss2 <- as.data.frame(cbind(ss_pod1,sscell_pod1))
+ss2 <- subset(ss2,crp_group==4)
+mx <- mx[,colnames(mx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with clinical covariates
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_pod1 <- dge
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ wound_typeOP + duration_sx + ethnicityCAT + ageCS +
+    Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + sexD )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+mvf_hi_pod1_adj <- dge
+
+dim(subset(mvf_hi_pod1,padj<0.05))
+
+```
+
+## Effect of surgery in males with high CRP
+
+### In sexD==1 females
+
+16 females only with T0 and POD1
+
+```{r,surgfemale}
+
+ss2 <- merge(sscell,ss,by=0)
+rownames(ss2) <- ss2$Row.names
+
+ss2 <- subset(ss2,crp_group==4 & timepoint != "EOS" & sexD == 1 )
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+dim(mx)
+
+table(chr2gene[match(sapply(strsplit(rownames(mx)," "),"[[",1),chr2gene$V2),1])
+
+ss2 <- ss2[which(rownames(ss2) %in% colnames(mx)),]
+ss2 <- ss2[order(rownames(ss2)),]
+
+ss2$timepoint <- factor(ss2$timepoint,levels=c("T0","POD1"))
+
+#dim(mx)
+#mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+#dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+surgfemale <- dge
+dim(subset(surgfemale,padj<0.05))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+surgfemale_adj <- dge
+
+dim(subset(surgfemale_adj,padj<0.05))
+
+(dim(subset(surgfemale,padj<0.05))[1] - dim(subset(surgfemale_adj,padj<0.05))[1]) / dim(subset(surgfemale,padj<0.05))[1]
+
+
+```
+
+### In sexD==2 males
+
+38 males with T0 and POD1
+
+```{r,surgmale}
+
+ss2 <- merge(sscell,ss,by=0)
+rownames(ss2) <- ss2$Row.names
+
+ss2 <- subset(ss2,crp_group==4 & timepoint != "EOS" & sexD == 2 )
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[which(rowMeans(mx)>10),]
+
+table(chr2gene[match(sapply(strsplit(rownames(mx)," "),"[[",1),chr2gene$V2),1])
+
+ss2 <- ss2[which(rownames(ss2) %in% colnames(mx)),]
+ss2 <- ss2[order(rownames(ss2)),]
+
+ss2$timepoint <- factor(ss2$timepoint,levels=c("T0","POD1"))
+
+#dim(mx)
+#mx <- mx[which(! sapply(strsplit(rownames(mx)," "),"[[",1) %in% xyg$V2),]
+#dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ PG_number + timepoint )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+surgmale <- dge
+dim(subset(surgmale,padj<0.05))
+
+# model with clinical and cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss2,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+surgmale_adj <- dge
+
+dim(subset(surgmale_adj,padj<0.05))
+
+table(chr2gene[match(sapply(strsplit(rownames(surgmale_adj)," "),"[[",1),chr2gene$V2),1])
+
+(dim(subset(surgmale,padj<0.05))[1] - dim(subset(surgmale_adj,padj<0.05))[1]) / dim(subset(surgmale,padj<0.05))[1]
+
+```
+
+## Compare male and female
+
+```{r,mf_compare}
+
+surgmale_up <- rownames(subset(surgmale,padj<0.05 & log2FoldChange >0))
+surgmale_dn <- rownames(subset(surgmale,padj<0.05 & log2FoldChange <0))
+
+surgfemale_up <- rownames(subset(surgfemale,padj<0.05 & log2FoldChange >0))
+surgfemale_dn <- rownames(subset(surgfemale,padj<0.05 & log2FoldChange <0))
+
+v1 <- list("male_up"=surgmale_up, "male_dn"=surgmale_dn,
+  "female_up"=surgfemale_up,"female_dn"=surgfemale_dn)
+
+plot(euler(v1),quantities = TRUE)
+
+common=3541+3402
+
+uniq=1700+472+684+3114
+
+common/(common+uniq) #54% common
+
+```
+
+## Session information
+
+For reproducibility
+
+```{r,sessioninfo}
+
+save.image("qc.Rds")
+
+sessionInfo()
+
+```
