@@ -1567,7 +1567,7 @@ ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
 
 str(ss2)
 
-ss3 <- subset(ss2,crp_group==4 & treatment_group==2, timepoint != "POD1")
+ss3 <- subset(ss2,crp_group==4 & treatment_group==2 & timepoint != "POD1")
 ss3$case <- grepl("EOS",ss3$timepoint)
 mx <- mx[,colnames(mx) %in% rownames(ss3)]
 dim(mx)
@@ -1633,7 +1633,7 @@ ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
 
 str(ss2)
 
-ss3 <- subset(ss2,crp_group==4 & treatment_group==2, timepoint != "T0")
+ss3 <- subset(ss2,crp_group==4 & treatment_group==2 & timepoint != "T0")
 ss3$case <- grepl("POD1",ss3$timepoint)
 mx <- mx[,colnames(mx) %in% rownames(ss3)]
 dim(mx)
@@ -1699,7 +1699,7 @@ ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
 
 str(ss2)
 
-ss3 <- subset(ss2,crp_group==4 & treatment_group==2, timepoint != "EOS")
+ss3 <- subset(ss2,crp_group==4 & treatment_group==2 & timepoint != "EOS")
 ss3$case <- grepl("POD1",ss3$timepoint)
 mx <- mx[,colnames(mx) %in% rownames(ss3)]
 dim(mx)
@@ -1757,7 +1757,7 @@ For reproducibility
 
 ```{r,sessioninfo}
 
-save.image("tca_paiirwwisse.Rds")
+save.image("tca_pairwise.Rdata")
 
 sessionInfo()
 

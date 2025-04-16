@@ -13,7 +13,7 @@ theme: cosmo
 
 ## Introduction
 
-Let's QC this data.
+Time course analysis of PADDI genomics data.
 
 ```{r,libraries}
 
@@ -27,60 +27,6 @@ suppressPackageStartupMessages({
   library("MASS")
   library("eulerr")
 })
-
-```
-
-## Multi-qc results
-
-Please have a look at the multiQC report.
-Here are a few key points:
-
-* Skewer trimming resulted in loss of only a tiny number of bases.
-This indicates the sequence quality is very high.
-
-* Fastqc results showing the number of unique and duplicate reads indicates a few samples with <10M unique reads.
-
-* Per seqence GC content showed an unusual profile for two samples.
-PG1423-EOS R1 and R2 had GC profile max at 40% compared to the mean.
-PG2090-EOS also showed an unusual pattern with underrepresented low GC%.
-
-* Sequence duplication levels were elevated for some fastq files.
-Here are the files of concern, with <20% unique reads:
-PG3627-POD1_S86_R1_001
-PG3627-POD1_S86_R2_001
-PG3609-T0_S317_R1_001
-PG2090-EOS_S134_R1_001
-PG2090-EOS_S134_R2_001
-
-* There were two files with overrepresented sequences: PG2090-EOS R1 and R2. Others are okay.
-
-* Adapter content was very low which is good.
-
-The fastq files were also checked with validatefastq-assembly which looks for signs of file corruption which can occur in large data transfers.
-No problematic files were detected.
-
-## rRNA amount
-
-Ribosomal RNA carryover can be a source of noise.
-The proportion should be <10% and there were a few samples in excess of this including PG2020-EOS, PG815-EOS, PG1452-EOS and PG702-POD1.
-
-```{r,rrna}
-
-rrna <- read.table("rrna_stats.txt")
-rrna <- rrna[,c(1,5)]
-rrna$V1 <- sapply(strsplit(rrna$V1,"\\."),"[[",1)
-rrna$V5 <- gsub("\\(","",rrna$V5)
-rrna$V5 <- gsub("%","",rrna$V5)
-rrna$V5 <- as.numeric(rrna$V5)
-str(rrna)
-
-rrna2 <- rrna[,2]
-names(rrna2) <- rrna[,1]
-
-par(mar=c(5,8,3,1))
-barplot(rrna2,horiz=TRUE,las=1,cex.names=0.5,main="rRNA carryover")
-rrna2 <- rrna2[order(-rrna2)]
-barplot(head(rrna2,20),horiz=TRUE,las=1,cex.names=0.6,main="rRNA carryover")
 
 ```
 
@@ -573,6 +519,42 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+shp <- ss1$crp_group + 14
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=shp, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1,sq=lowCRP,di=highCRP")
+
+```
+
+
+
+
+
+
+
+
+
+
 
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD

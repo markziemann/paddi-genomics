@@ -1,0 +1,374 @@
+---
+title: "PADDI RNA expression analysis - Timecourse Analysis - Downstream"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+Time course analysis of PADDI genomics data.
+
+```{r,libraries}
+
+suppressPackageStartupMessages({
+  library("gplots")
+  library("reshape2")
+  library("WGCNA")
+  library("dplyr")
+  library("DESeq2")
+  library("mitch")
+  library("MASS")
+  library("eulerr")
+  library("kableExtra")
+  library("gplots")
+})
+
+```
+
+## Load the data
+
+```{r,load}
+
+load("tca_pairwise.Rdata")
+
+go <- mitch::gmt_import("c5.go.v2024.1.Hs.symbols.gmt")
+names(go) <- gsub("_"," ",names(go))
+
+gt <- read.table("../ref/gencode.v38.genetable.tsv")
+
+rownames(gt) <- paste(gt[,1],gt[,2])
+
+gt[,1] <- rownames(gt)
+
+```
+
+## Overview
+
+We will run timecourse analysis with a simple pairwise approach.
+For each of the groups below, this will involve three comparisons:
+
+* T0 vs EOS
+
+* EOS vs POD1
+
+* T0 vs POD1
+
+The groups/subgroups we will look at are:
+
+1. Timecourse in low CRP group
+
+2. Timecourse in high CRP group
+
+3. Timecourse in low CRP group and treatment group A
+
+4. Timecourse in low CRP group and treatment group B
+
+5. Timecourse in high CRP group and treatment group A
+
+6. Timecourse in high CRP group and treatment group B
+
+In this report I will be loading in the DESeq2 objects and conducting downstream analysis.
+
+## Functions
+
+```{r,mitchpwfuncs}
+
+mitch1d <- function(de,dename,gs,gt=gt) {
+  m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
+  mres <- mitch_calc(x=m,genesets=gs,minsetsize=5,cores=8,priority="effect")
+  mtop_up <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05  & s.dist>0),15)
+  mtop_up |> kbl(caption=paste(dename,"GO up")) |> kable_paper("hover", full_width = F)
+  mtop_dn <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05  & s.dist<0),15)
+  mtop_dn |> kbl(caption=paste(dename,"GO dn")) |> kable_paper("hover", full_width = F)
+  mtop <- rbind(mtop_up, mtop_dn[nrow(mtop_dn):1,])
+  vec <- mtop$s.dist
+  names(vec) <- mtop$set
+  vec <- sort(vec)
+  par( mar = c(5.1, 25.1, 4.1, 2.1) )
+  barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=dename)
+  par( mar = c(5.1, 4.1, 4.1, 2.1) )
+#  mitch_report(res=mres,outfile=paste(dename,"_mitchreport.html",sep=""),overwrite=TRUE)
+}
+
+#mitch1d(de=tc_lo_t0veos_adj, dename="tc_lo_t0veos_adj", gs=go, gt=gt)
+
+mitch2d <- function(de1, de2, de1name, de2name, gs, gt=gt) {
+  l <-list(de1,de2)
+  names(l) <- c(de1name, de2name)
+  m <- mitch_import(x=l, DEtype="deseq2", geneTable=gt )
+  mres <- mitch_calc(x=m,genesets=gs, minsetsize=5, cores=8, priority="effect")
+  mtop <- head( subset(mres$enrichment_result, p.adjustMANOVA < 0.05), 30)
+  mtop |> kbl(caption=paste("GO")) |> kable_paper("hover", full_width = F)
+  mx <- as.matrix(mtop[,4:5])
+  rownames(mx) <- mtop$set
+  colfunc <- colorRampPalette(c("blue", "white", "red"))
+  heatmap.2(mx,col=colfunc,scale="none",trace="none",mar=c(8,20),cexRow=0.6, cexCol=0.8)
+}
+
+#mitch2d(de=tc_lo_t0veos_adj, de2=tc_lo_eosvpod1_adj,
+#  de1name="tc_lo_t0veos_adj", de2name="tc_lo_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Object names
+
+#### Timecourse in low CRP group
+
+tc_lo_t0veos_adj
+tc_lo_eosvpod1_adj
+tc_lo_t0vpod1_adj
+
+```{r,quant1}
+
+mitch1d(de=tc_lo_t0veos_adj, dename="tc_lo_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_eosvpod1_adj, dename="tc_lo_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_t0vpod1_adj, dename="tc_lo_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+#### Timecourse in high CRP group
+
+tc_hi_t0veos_adj
+tc_hi_eosvpod1_adj
+tc_hi_t0vpod1_adj
+
+```{r,quant2}
+
+mitch1d(de=tc_hi_t0veos_adj, dename="tc_hi_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_eosvpod1_adj, dename="tc_hi_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_t0vpod1_adj, dename="tc_hi_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+#### Timecourse in low CRP group and treatment group A
+
+tc_lo_a_t0veos_adj
+tc_lo_a_eosvpod1_adj
+tc_lo_a_t0vpod1_adj
+
+```{r,quant3}
+
+mitch1d(de=tc_lo_a_t0veos_adj, dename="tc_lo_a_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_a_eosvpod1_adj, dename="tc_lo_a_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_a_t0vpod1_adj, dename="tc_lo_a_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+#### Timecourse in low CRP group and treatment group B
+
+tc_lo_b_t0veos_adj
+tc_lo_b_eosvpod1_adj
+tc_lo_b_t0vpod1_adj
+
+```{r,quant4}
+
+mitch1d(de=tc_lo_b_t0veos_adj, dename="tc_lo_b_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_b_eosvpod1_adj, dename="tc_lo_b_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_lo_b_t0vpod1_adj, dename="tc_lo_b_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+
+#### Timecourse in high CRP group and treatment group A
+
+tc_hi_a_t0veos_adj
+tc_hi_a_eosvpod1_adj
+tc_hi_a_t0vpod1_adj
+
+```{r,quant5}
+
+mitch1d(de=tc_hi_a_t0veos_adj, dename="tc_hi_a_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_a_eosvpod1_adj, dename="tc_hi_a_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_a_t0vpod1_adj, dename="tc_hi_a_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+#### Timecourse in high CRP group and treatment group B
+
+tc_hi_b_t0veos_adj
+tc_hi_b_eosvpod1_adj
+tc_hi_b_t0vpod1_adj
+
+```{r,quant6}
+
+mitch1d(de=tc_hi_b_t0veos_adj, dename="tc_hi_b_t0veos_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_b_eosvpod1_adj, dename="tc_hi_b_eosvpod1_adj", gs=go, gt=gt)
+
+mitch1d(de=tc_hi_b_t0vpod1_adj, dename="tc_hi_b_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+### low CRP group
+
+Few changes in T0 vs EOS and more in EOS vs POD1.
+
+TODO:
+* Euler diagram
+* scatter plot of stat values
+* pathway analysis
+* bar charts and meaning of the DGE results
+
+```{r,lowcrpquant}
+
+mitch2d(de1=tc_lo_t0veos_adj, de2=tc_lo_eosvpod1_adj,
+  de1name="tc_lo_t0veos_adj", de2name="tc_lo_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### high CRP group
+
+```{r,hicrpquant}
+
+mitch2d(de1=tc_hi_t0veos_adj, de2=tc_hi_eosvpod1_adj,
+  de1name="tc_hi_t0veos_adj", de2name="tc_hi_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Timecourse in low CRP group and treatment group A
+
+```{r,lowcrp_a_quant}
+
+mitch2d(de1=tc_lo_a_t0veos_adj, de2=tc_lo_a_eosvpod1_adj,
+  de1name="tc_lo_a_t0veos_adj", de2name="tc_lo_a_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Timecourse in low CRP group and treatment group B
+
+```{r,lowcrp_b_quant}
+
+mitch2d(de=tc_lo_b_t0veos_adj, de2=tc_lo_b_eosvpod1_adj,
+  de1name="tc_lo_b_t0veos_adj", de2name="tc_lo_b_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Timecourse in high CRP group and treatment group A
+
+```{r,hicrp_a_quant}
+
+mitch2d(de1=tc_hi_a_t0veos_adj, de2=tc_hi_a_eosvpod1_adj,
+  de1name="tc_hi_a_t0veos_adj", de2name="tc_hi_a_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Timecourse in high CRP group and treatment group B
+
+```{r,hicrp_b_quant}
+
+mitch2d(de1=tc_hi_b_t0veos_adj, de2=tc_hi_b_eosvpod1_adj,
+  de1name="tc_hi_b_t0veos_adj", de2name="tc_hi_b_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of high and low CRP groups T0 vs EOS
+
+```{r,t0veos_hilo}
+
+mitch2d(de1=tc_lo_t0veos_adj, de2=tc_hi_t0veos_adj,
+  de1name="tc_lo_t0veos_adj", de2name="tc_hi_t0veos_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of high and low CRP groups EOS vs POD1
+
+```{r,eosvpod1_hilo}
+
+mitch2d(de1=tc_lo_eosvpod1_adj, de2=tc_hi_eosvpod1_adj ,
+  de1name="tc_lo_eosvpod1_adj", de2name="tc_hi_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of high and low CRP groups T0 vs POD1
+
+```{r,tovpod1_hilo}
+
+mitch2d(de1=tc_lo_t0vpod1_adj, de2=tc_hi_t0vpod1_adj,
+  de1name="tc_lo_t0vpod1_adj", de2name="tc_hi_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in low CRP T0 vs EOS 
+
+```{r,lo_t0veos_avb}
+
+mitch2d(de1=tc_lo_a_t0veos_adj, de2=tc_lo_b_t0veos_adj,
+  de1name="tc_lo_a_t0veos_adj", de2name="tc_lo_b_t0veos_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in low CRP EOS vs POD1
+
+```{r,lo_eosvpod1_avb}
+
+mitch2d(de1=tc_lo_a_eosvpod1_adj, de2=tc_lo_b_eosvpod1_adj,
+  de1name="tc_lo_a_eosvpod1_adj", de2name="tc_lo_b_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in low CRP T0 vs POD1
+
+```{r,lo_t0vpod1_avb}
+
+mitch2d(de1=tc_lo_a_t0vpod1_adj, de2=tc_lo_b_t0vpod1_adj,
+  de1name="tc_lo_a_t0vpod1_adj", de2name="tc_lo_b_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in high CRP T0 vs EOS 
+
+```{r,hi_t0veos_avb}
+
+mitch2d(de1=tc_hi_a_t0veos_adj, de2=tc_hi_b_t0veos_adj,
+  de1name="tc_hi_a_t0veos_adj", de2name="tc_hi_b_t0veos_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in high CRP EOS vs POD1
+
+```{r,hi_eosvpod1_avb}
+
+mitch2d(de1=tc_hi_a_eosvpod1_adj, de2=tc_hi_b_eosvpod1_adj,
+  de1name="tc_hi_a_eosvpod1_adj", de2name="tc_hi_b_eosvpod1_adj", gs=go, gt=gt)
+
+```
+
+### Comparison of treatment groups A and B in high CRP T0 vs POD1
+
+```{r,hi_t0vpod1_avb}
+
+mitch2d(de1=tc_hi_a_t0vpod1_adj, de2=tc_hi_b_t0vpod1_adj,
+  de1name="tc_hi_a_t0vpod1_adj", de2name="tc_hi_b_t0vpod1_adj", gs=go, gt=gt)
+
+```
+
+## STOP HERE
+
+This one is getting long, so I will continue downstream analysis in a separate script.
+
+## Session information
+
+For reproducibility
+
+```{r,sessioninfo}
+
+sessionInfo()
+
+```
