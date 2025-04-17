@@ -536,25 +536,11 @@ col <- gsub("T0","lightblue",col)
 col <- gsub("POD1","orange",col)
 col <- gsub("EOS","pink",col)
 
-shp <- ss1$crp_group + 14
-
 plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
   xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
-  type = "p", col=col, pch=shp, cex.axis=1.3,cex.lab=1.3, bty='n')
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low")
 #text(mds, labels=rownames(mds), cex=0.8) 
-mtext("blue=T0,pink=EOS,orange=POD1,sq=lowCRP,di=highCRP")
-
-```
-
-
-
-
-
-
-
-
-
-
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
@@ -569,6 +555,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
 
@@ -621,6 +629,28 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi <- dge
 
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -634,6 +664,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
 
@@ -688,6 +740,28 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo_a <- dge
 
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt A")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -701,6 +775,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo_a_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt A adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
 
@@ -755,6 +851,28 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo_b <- dge
 
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt B")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -768,6 +886,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_lo_b_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt B adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
 
@@ -822,6 +962,28 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi_a <- dge
 
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high Trt A")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -835,6 +997,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi_a_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high Trt A adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 top <- as.matrix(dge[1:30,grep("-",colnames(dge))])
 colfunc <- colorRampPalette(c("blue", "white", "red"))
@@ -933,6 +1117,28 @@ head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi_b <- dge
 
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high Trt B")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
 # model with cell covariates
 # Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -946,6 +1152,28 @@ dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
 mean(abs(dge$stat))
 tc_hi_b_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP high Trt B adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
 
 # cluster and heatmap
 top <- as.matrix(dge[1:30,grep("-",colnames(dge))])
@@ -1056,7 +1284,6 @@ ori <- as.matrix(dge[,grep("-",colnames(dge))])
 dm <- merge(ori,adj2,by=0)
 rownames(dm) <- dm$Row.names
 dm$Row.names <- NULL
-
 
 # run MDS of corrected and original data
 mds <- cmdscale(dist(t(dm)))
