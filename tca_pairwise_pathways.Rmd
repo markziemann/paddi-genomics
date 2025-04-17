@@ -99,17 +99,19 @@ mitch1d <- function(de,dename,gs,gt=gt) {
 
 #mitch1d(de=tc_lo_t0veos_adj, dename="tc_lo_t0veos_adj", gs=go, gt=gt)
 
-mitch2d <- function(de1, de2, de1name, de2name, gs, gt=gt) {
+mitch2d <- function(de1, de2, de1name, de2name, gs, gt=gt, ngenes=40) {
   l <-list(de1,de2)
   names(l) <- c(de1name, de2name)
   m <- mitch_import(x=l, DEtype="deseq2", geneTable=gt )
   mres <- mitch_calc(x=m,genesets=gs, minsetsize=5, cores=8, priority="effect")
-  mtop <- head( subset(mres$enrichment_result, p.adjustMANOVA < 0.05), 30)
+  mtop <- head( subset(mres$enrichment_result, p.adjustMANOVA < 0.05), ngenes)
   mtop |> kbl(caption=paste("GO")) |> kable_paper("hover", full_width = F)
   mx <- as.matrix(mtop[,4:5])
   rownames(mx) <- mtop$set
-  colfunc <- colorRampPalette(c("blue", "white", "red"))
-  heatmap.2(mx,col=colfunc,scale="none",trace="none",mar=c(8,20),cexRow=0.6, cexCol=0.8)
+  mx <- rbind(mx,t(as.matrix(c(-1,1))))
+  rownames(mx)[nrow(mx)] <- "minmax"
+  colfunc <- colorRampPalette(c("darkblue","blue","lightblue", "white", "pink","red","darkred"))
+  heatmap.2(mx,col=colfunc(50),scale="none",trace="none",mar=c(8,20),cexRow=0.6, cexCol=0.8)
 }
 
 #mitch2d(de=tc_lo_t0veos_adj, de2=tc_lo_eosvpod1_adj,
