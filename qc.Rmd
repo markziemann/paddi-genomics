@@ -26,6 +26,7 @@ suppressPackageStartupMessages({
   library("mitch")
   library("MASS")
   library("eulerr")
+  library("beeswarm")
 })
 
 ```
@@ -1274,6 +1275,46 @@ sscell_pod1 <- sscell[grep("POD1",rownames(sscell)),]
 
 ```
 
+Now look at the cell composition across time points and groups.
+
+```{r,cells3}
+
+# trt1 and trt2 togethr
+null <- lapply(1:17 , function(i) {
+  cellname <- colnames(sscell_t0)[i]
+  t0vals <- sscell_t0[,i]
+  eosvals <- sscell_eos[,i]
+  pod1vals <- sscell_pod1[,i]
+  cl <- list("t0"=t0vals,"EOS"=eosvals,"POD1"=pod1vals)
+  boxplot(cl,col="white",cex=0,ylab="estimated relative cell proportion",main=cellname)
+  beeswarm(cl,pch=19,col="darkgray",cex=1.5,add=TRUE)
+})
+
+
+sscell_t0$trt <- ss[match(rownames(sscell_t0),rownames(ss)),"treatment_group"]
+sscell_eos$trt <- ss[match(rownames(sscell_eos),rownames(ss)),"treatment_group"]
+sscell_pod1$trt <- ss[match(rownames(sscell_pod1),rownames(ss)),"treatment_group"]
+
+null <- lapply(1:17 , function(i) {
+  cellname <- colnames(sscell_t0)[i]
+  t0vals_trt1 <- subset(sscell_t0,trt==1)[,i]
+  t0vals_trt2 <- subset(sscell_t0,trt==2)[,i]
+
+  eosvals_trt1 <- subset(sscell_eos,trt==1)[,i]
+  eosvals_trt2 <- subset(sscell_eos,trt==2)[,i]
+
+  pod1vals_trt1 <- subset(sscell_pod1,trt==1)[,i]
+  pod1vals_trt2 <- subset(sscell_pod1,trt==2)[,i]
+
+  cl <- list("t0 trt1"=t0vals_trt1,"t0 trt2"=t0vals_trt2,
+    "EOS trt1"=eosvals_trt1, "EOS trt2"=eosvals_trt2,
+    "POD1 trt1"=pod1vals_trt1, "POD1 trt2"=pod1vals_trt2 )
+  boxplot(cl,col="white",cex=0,ylab="estimated relative cell proportion",main=cellname)
+  beeswarm(cl,pch=19,col="darkgray",cex=1.2,add=TRUE)
+})
+
+```
+
 Now look at how cell types associate with the PCAs.
 
 ```{r,cellpca}
@@ -1871,6 +1912,107 @@ mean(abs(dge$stat))
 avb_crplo_eos_adj <- dge
 
 ```
+
+Save DEX responsive genes.
+We will quantify DEX response then investigate patterns in t0 that associate with this reponse.
+
+```{r,save_dex_genes}
+
+# save 10 dex genes
+dex_genes <- rownames(head(subset(avb_crplo_eos_adj,log2FoldChange<0),10))
+dex_genes
+
+# Get normalised values
+myrows <- which(rownames(avb_crplo_eos_adj) %in% dex_genes)
+mycols <- grep("EOS",colnames(avb_crplo_eos_adj))
+dexmx <- avb_crplo_eos_adj[myrows,mycols]
+dim(dexmx)
+
+# get dex scores
+dex_response_metric <- colSums(dexmx)
+par(mar=c(5.1,8.1,2.1,2.1))
+barplot(sort(dex_response_metric),las=1,cex.names=0.6,
+  horiz=TRUE,xlab="Dex response metric",xlim=c(70,115),
+  xpd = FALSE)
+par(mar=c(5.1,4.1,4.1,2.1))
+
+# Look at dex gene score across samples by treatment group
+trt1 <- rownames(subset(ss2,treatment_group==1))
+trt2 <- rownames(subset(ss2,treatment_group==2))
+trt1_dex_response <- dex_response_metric[which(names(dex_response_metric) %in% trt1)]
+trt2_dex_response <- dex_response_metric[which(names(dex_response_metric) %in% trt2)]
+summary(trt1_dex_response)
+summary(trt2_dex_response)
+trt_dex_response_list <- list("Trt1"=trt1_dex_response,"Trt2"=trt2_dex_response)
+boxplot(trt_dex_response_list,col="white",cex=0,ylab="dex score")
+beeswarm(trt_dex_response_list,col="darkgray",pch=19,cex=2,add=TRUE)
+
+# now look at effectiveness of dex response in 
+infec <- read.table("infec.tsv",header=TRUE)
+infectrue <- subset(infec,infection30d==1)$PG_number
+infecfalse <- subset(infec,infection30d==0)$PG_number
+names(dex_response_metric) <- gsub("-EOS","",names(dex_response_metric))
+infectrue_dexresponse <- dex_response_metric[ names(dex_response_metric) %in% infectrue ]
+infecfalse_dexresponse <- dex_response_metric[ names(dex_response_metric) %in% infecfalse ]
+dex_response_list <- list("Infec"=infectrue_dexresponse,"NoInfec"=infecfalse_dexresponse)
+boxplot(dex_response_list,col="white",cex=0,ylab="dex score")
+beeswarm(dex_response_list,col="darkgray",pch=19,cex=2,add=TRUE)
+t.test(infectrue_dexresponse,infecfalse_dexresponse)
+
+```
+
+Associate dex response score in trt2 group with t=0 expression.
+
+```{r,baselineassocdex1}
+
+trt2_dex_response_scaled <- as.vector(scale(trt2_dex_response,center=TRUE))
+names(trt2_dex_response_scaled) <- names(trt2_dex_response)
+trt2_dex_response_df <- data.frame(trt2_dex_response_scaled)
+rownames(trt2_dex_response_df) <- gsub("EOS","T0",rownames(trt2_dex_response_df))
+mx <- xt0f
+ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
+ss3 <- merge(trt2_dex_response_df,ss2,by=0)
+rownames(ss3) <- ss3$Row.names
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ sexD + ageCS + trt2_dex_response_scaled )
+
+res <- DESeq(dds)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+```
+
+CSMD1 could be interpreted to be an inhibitor of DEX response.
+
+```{r,csmd1_check}
+
+trt2_dex_response2 <- trt2_dex_response[which(gsub("-EOS","-T0",names(trt2_dex_response)) %in% colnames(rpm))]
+
+rpm <- apply(mx,2,function(x) { x/sum(x) * 1e6 } )
+
+cor_res <- lapply(1:nrow(rpm), function(i) {
+  unlist(cor.test(rpm[i,],trt2_dex_response2)[c(3,4)])
+})
+
+cor_df <- do.call(rbind,cor_res)
+rownames(cor_df) <- rownames(rpm)
+cor_df <- cor_df[order(cor_df[,"p.value"]),]
+cor_df <- as.data.frame(cor_df)
+cor_df$fdr <- p.adjust(cor_df$p.value)
+head(cor_df,20)
+
+```
+
+CSMD1 is in the top 20 however it wasn't significant.
+DYRK3 appeared in the top spot using the simple pearson correlation however it wasn't statistically significant.
+
 
 ### Treatment A vs B EOS in CRP high group
 
