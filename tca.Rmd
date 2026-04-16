@@ -26,6 +26,7 @@ suppressPackageStartupMessages({
   library("mitch")
   library("MASS")
   library("eulerr")
+  library("beeswarm")
 })
 
 ```
@@ -580,6 +581,112 @@ mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
 
+Now with separate t0-EOS-POD1 comparisons.
+
+```{r,tc_crplo2}
+
+# t0-EOS comparison
+ss3a <- ss3[grep("POD",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3a)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3a,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc1_lo_adj <- dge
+
+nrow(tc1_lo_adj)
+nrow(subset(tc1_lo_adj,padj<0.05))
+nrow(subset(tc1_lo_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc1_lo_adj,padj<0.05 & log2FoldChange <0))
+
+# EOS-POD1 comparison
+ss3b <- ss3[grep("T0",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3b)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3b,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc2_lo_adj <- dge
+
+nrow(tc2_lo_adj)
+nrow(subset(tc2_lo_adj,padj<0.05))
+nrow(subset(tc2_lo_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc2_lo_adj,padj<0.05 & log2FoldChange <0))
+
+```
+
+Sort DEGs into 8 groups.
+
+1. ns, up
+2. ns, dn
+3. up, dn
+4. dn, up
+5. dn, ns
+6. up, ns
+7. up, up
+8. dn, dn
+
+
+```{r,tc_crplo3}
+
+tc1_lo_adj_up <- rownames(subset(tc1_lo_adj,padj<0.05 & log2FoldChange >0 ))
+tc1_lo_adj_dn <- rownames(subset(tc1_lo_adj,padj<0.05 & log2FoldChange <0 ))
+tc1_lo_adj_ns <- rownames(subset(tc1_lo_adj,padj>0.05 ))
+
+tc2_lo_adj_up <- rownames(subset(tc2_lo_adj,padj<0.05 & log2FoldChange >0 ))
+tc2_lo_adj_dn <- rownames(subset(tc2_lo_adj,padj<0.05 & log2FoldChange <0 ))
+tc2_lo_adj_ns <- rownames(subset(tc2_lo_adj,padj>0.05 ))
+
+G1 <- intersect(tc1_lo_adj_ns,tc2_lo_adj_up)
+G2 <- intersect(tc1_lo_adj_ns,tc2_lo_adj_dn)
+
+G3 <- intersect(tc1_lo_adj_up, tc2_lo_adj_dn)
+G4 <- intersect(tc1_lo_adj_dn, tc2_lo_adj_up)
+
+G5 <- intersect(tc1_lo_adj_up,tc2_lo_adj_ns)
+G6 <- intersect(tc1_lo_adj_dn,tc2_lo_adj_ns)
+
+
+G7 <- intersect(tc1_lo_adj_up, tc2_lo_adj_up)
+G8 <- intersect(tc1_lo_adj_dn, tc2_lo_adj_dn)
+
+G9 <- intersect(tc1_lo_adj_ns,tc2_lo_adj_ns)
+
+GL <- list("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9)
+lapply(GL,length)
+
+length(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9))
+
+length(unique(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8)))
+
+```
+
 ### Timecourse in high CRP group
 
 ```{r,tc_crphi}
@@ -688,6 +795,516 @@ plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
 mtext("blue=T0,pink=EOS,orange=POD1")
 
 ```
+
+Look at the top genes.
+
+```{r,tc_crphi_topgenes}
+
+rpm <- apply(xx,2,function(x) { x/sum(x) * 1e6 } )
+zrpm <- t(apply(rpm,1,scale))
+colnames(zrpm) <- colnames(rpm)
+dim(zrpm)
+
+ss3 <- subset(ss2,crp_group==1)
+zrpmlo <- zrpm[,colnames(zrpm) %in% rownames(ss3)]
+dim(zrpmlo)
+
+ss3 <- subset(ss2,crp_group==4)
+zrpmhi <- zrpm[,colnames(zrpm) %in% rownames(ss3)]
+dim(zrpmhi)
+
+mygenes <- c("ENSG00000100368.14 CSF2RB","ENSG00000139572.4 GPR84","ENSG00000236911.6 RP11-78B10.2",
+  "ENSG00000197632.9 SERPINB2", "ENSG00000059804.16 SLC2A3", "ENSG00000184557.4 SOCS3")
+
+par(mfrow=c(3,2))
+null <- lapply(mygenes, function(myg) {
+  mymax <- max(c(zrpmlo[which(rownames(zrpmlo) == myg),], zrpmhi[which(rownames(zrpmhi) == myg),]))
+  mymin <- min(c(zrpmlo[which(rownames(zrpmlo) == myg),], zrpmhi[which(rownames(zrpmhi) == myg),]))
+  myd <- zrpmlo[which(rownames(zrpmlo) == myg),]
+  t0 <- myd[grep("T0",names(myd))]
+  eos <- myd[grep("EOS",names(myd))]
+  pod1 <- myd[grep("POD1",names(myd))]
+  myl <- list("T0"=t0,"EOS"=eos,"POD1"=pod1)
+  boxplot(myl,cex=0,col="white",ylab="scaled relative expression",
+    main=paste("low CRP",myg),ylim=c(mymin,mymax))
+  beeswarm(myl,add=TRUE)
+  myd <- zrpmhi[which(rownames(zrpmhi) == myg),]
+  t0 <- myd[grep("T0",names(myd))]
+  eos <- myd[grep("EOS",names(myd))]
+  pod1 <- myd[grep("POD1",names(myd))]
+  myl <- list("T0"=t0,"EOS"=eos,"POD1"=pod1)
+  boxplot(myl,cex=0,col="white",ylab="scaled relative expression",
+    main=paste("high CRP",myg),ylim=c(mymin,mymax))
+  beeswarm(myl,add=TRUE)
+})
+
+par(mfrow=c(1,1))
+
+mydowngenes <- c("ENSG00000158485.11 CD1B", "ENSG00000158488.16 CD1E", "ENSG00000136944.19 LMX1B", "ENSG00000165526.9 RPUSD4")
+
+zhi <- colSums(zrpmhi[which(rownames(zrpmhi) %in% mygenes),])
+zhi <- zhi[grep("EOS",names(zhi))]
+dhi <- colSums(zrpmhi[which(rownames(zrpmhi) %in% mydowngenes),])
+dhi <- dhi[grep("EOS",names(dhi))]
+zzhi <- zhi/dhi
+
+zlo <- colSums(zrpmlo[which(rownames(zrpmlo) %in% mygenes),])
+zlo <- zlo[grep("EOS",names(zhi))]
+dlo <- colSums(zrpmlo[which(rownames(zrpmlo) %in% mydowngenes),])
+dlo <- dlo[grep("EOS",names(dhi))]
+zzlo <- zlo/dlo
+
+zll <- list("low"=zlo,"high"=zhi)
+boxplot(zll,cex=0,col="white",ylab="aggregate expression")
+beeswarm(zll,add=TRUE,pch=19,col="darkgray",cex=1.2)
+
+```
+
+This method can identify genes with overall differential expression, however it does not show ones that could be good candidate genes.
+
+Now with separate t0-EOS-POD1 comparisons.
+
+```{r,tc_crphi2}
+
+# t0-EOS comparison
+ss3a <- ss3[grep("POD",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3a)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3a,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc1_hi_adj <- dge
+
+nrow(tc1_hi_adj)
+nrow(subset(tc1_hi_adj,padj<0.05))
+nrow(subset(tc1_hi_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc1_hi_adj,padj<0.05 & log2FoldChange <0))
+
+# EOS-POD1 comparison
+ss3b <- ss3[grep("T0",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3b)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3b,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc2_hi_adj <- dge
+
+nrow(tc2_hi_adj)
+nrow(subset(tc2_hi_adj,padj<0.05))
+nrow(subset(tc2_hi_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc2_hi_adj,padj<0.05 & log2FoldChange <0))
+
+```
+
+Sort DEGs into 8 groups.
+
+1. ns, up
+2. ns, dn
+3. up, dn
+4. dn, up
+5. dn, ns
+6. up, ns
+7. up, up
+8. dn, dn
+
+```{r,tc_crphi3}
+
+tc1_hi_adj_up <- rownames(subset(tc1_hi_adj,padj<0.05 & log2FoldChange >0 ))
+tc1_hi_adj_dn <- rownames(subset(tc1_hi_adj,padj<0.05 & log2FoldChange <0 ))
+tc1_hi_adj_ns <- rownames(subset(tc1_hi_adj,padj>0.05 ))
+
+tc2_hi_adj_up <- rownames(subset(tc2_hi_adj,padj<0.05 & log2FoldChange >0 ))
+tc2_hi_adj_dn <- rownames(subset(tc2_hi_adj,padj<0.05 & log2FoldChange <0 ))
+tc2_hi_adj_ns <- rownames(subset(tc2_hi_adj,padj>0.05 ))
+
+G1 <- intersect(tc1_hi_adj_ns,tc2_hi_adj_up)
+G2 <- intersect(tc1_hi_adj_ns,tc2_hi_adj_dn)
+
+G3 <- intersect(tc1_hi_adj_up, tc2_hi_adj_dn)
+G4 <- intersect(tc1_hi_adj_dn, tc2_hi_adj_up)
+
+G5 <- intersect(tc1_hi_adj_up,tc2_hi_adj_ns)
+G6 <- intersect(tc1_hi_adj_dn,tc2_hi_adj_ns)
+
+G7 <- intersect(tc1_hi_adj_up, tc2_hi_adj_up)
+G8 <- intersect(tc1_hi_adj_dn, tc2_hi_adj_dn)
+
+G9 <- intersect(tc1_hi_adj_ns,tc2_hi_adj_ns)
+
+GL <- list("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9)
+lapply(GL,length)
+
+length(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9))
+
+length(unique(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8)))
+
+```
+
+### Timecourse in treatment group A
+
+treatment_group==1 is DEX
+
+```{r,tc_a}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,treatment_group==1)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_a_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt A adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
+```
+
+Now with separate t0-EOS-POD1 comparisons.
+
+```{r,tc_a2}
+
+# t0-EOS comparison
+ss3a <- ss3[grep("POD",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3a)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3a,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc1_a_adj <- dge
+
+nrow(tc1_a_adj)
+nrow(subset(tc1_a_adj,padj<0.05))
+nrow(subset(tc1_a_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc1_a_adj,padj<0.05 & log2FoldChange <0))
+
+# EOS-POD1 comparison
+ss3b <- ss3[grep("T0",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3b)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3b,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc2_a_adj <- dge
+
+nrow(tc2_a_adj)
+nrow(subset(tc2_a_adj,padj<0.05))
+nrow(subset(tc2_a_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc2_a_adj,padj<0.05 & log2FoldChange <0))
+
+```
+
+Sort DEGs into 8 groups.
+
+1. ns, up
+2. ns, dn
+3. up, dn
+4. dn, up
+5. dn, ns
+6. up, ns
+7. up, up
+8. dn, dn
+
+```{r,tc_a3}
+
+tc1_a_adj_up <- rownames(subset(tc1_a_adj,padj<0.05 & log2FoldChange >0 ))
+tc1_a_adj_dn <- rownames(subset(tc1_a_adj,padj<0.05 & log2FoldChange <0 ))
+tc1_a_adj_ns <- rownames(subset(tc1_a_adj,padj>0.05 ))
+
+tc2_a_adj_up <- rownames(subset(tc2_a_adj,padj<0.05 & log2FoldChange >0 ))
+tc2_a_adj_dn <- rownames(subset(tc2_a_adj,padj<0.05 & log2FoldChange <0 ))
+tc2_a_adj_ns <- rownames(subset(tc2_a_adj,padj>0.05 ))
+
+G1 <- intersect(tc1_a_adj_ns,tc2_a_adj_up)
+G2 <- intersect(tc1_a_adj_ns,tc2_a_adj_dn)
+
+G3 <- intersect(tc1_a_adj_up, tc2_a_adj_dn)
+G4 <- intersect(tc1_a_adj_dn, tc2_a_adj_up)
+
+G5 <- intersect(tc1_a_adj_up,tc2_a_adj_ns)
+G6 <- intersect(tc1_a_adj_dn,tc2_a_adj_ns)
+
+G7 <- intersect(tc1_a_adj_up, tc2_a_adj_up)
+G8 <- intersect(tc1_a_adj_dn, tc2_a_adj_dn)
+
+G9 <- intersect(tc1_a_adj_ns,tc2_a_adj_ns)
+
+GL <- list("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9)
+lapply(GL,length)
+
+length(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9))
+
+length(unique(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8)))
+
+```
+
+### Timecourse in treatment group B
+
+treatment_group==2 is PLACEBO
+
+```{r,tc_b}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = FALSE)
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+
+ss3 <- subset(ss2,treatment_group==2)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_b_adj <- dge
+
+## MDS
+nmx <- assay(vsd)
+mds <- cmdscale(dist(t(nmx)))
+
+par(mar=c(5,5,3,1))
+minx <- min(mds[,1])
+maxx <- max(mds[,1])
+miny <- min(mds[,2])
+maxy <- max(mds[,2])
+
+col <- rownames(mds)
+col <- sapply(strsplit(col,"-"),"[[",2)
+col <- gsub("T0","lightblue",col)
+col <- gsub("POD1","orange",col)
+col <- gsub("EOS","pink",col)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=19, cex.axis=1.3,cex.lab=1.3, bty='n', main="CRP low Trt A adj")
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0,pink=EOS,orange=POD1")
+
+```
+
+Now with separate t0-EOS-POD1 comparisons.
+
+```{r,tc_b2}
+
+# t0-EOS comparison
+ss3a <- ss3[grep("POD",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3a)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3a,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc1_b_adj <- dge
+
+nrow(tc1_b_adj)
+nrow(subset(tc1_b_adj,padj<0.05))
+nrow(subset(tc1_b_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc1_b_adj,padj<0.05 & log2FoldChange <0))
+
+# EOS-POD1 comparison
+ss3b <- ss3[grep("T0",rownames(ss3),invert=TRUE),]
+
+mx <- xx[,colnames(xx) %in% rownames(ss3b)]
+mx <- mx[,order(colnames(mx)),]
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3b,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + timepoint )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc2_b_adj <- dge
+
+nrow(tc2_b_adj)
+nrow(subset(tc2_b_adj,padj<0.05))
+nrow(subset(tc2_b_adj,padj<0.05 & log2FoldChange >0))
+nrow(subset(tc2_b_adj,padj<0.05 & log2FoldChange <0))
+
+```
+
+Sort DEGs into 8 groups.
+
+1. ns, up
+2. ns, dn
+3. up, dn
+4. dn, up
+5. dn, ns
+6. up, ns
+7. up, up
+8. dn, dn
+
+```{r,tc_b3}
+
+tc1_b_adj_up <- rownames(subset(tc1_b_adj,padj<0.05 & log2FoldChange >0 ))
+tc1_b_adj_dn <- rownames(subset(tc1_b_adj,padj<0.05 & log2FoldChange <0 ))
+tc1_b_adj_ns <- rownames(subset(tc1_b_adj,padj>0.05 ))
+
+tc2_b_adj_up <- rownames(subset(tc2_b_adj,padj<0.05 & log2FoldChange >0 ))
+tc2_b_adj_dn <- rownames(subset(tc2_b_adj,padj<0.05 & log2FoldChange <0 ))
+tc2_b_adj_ns <- rownames(subset(tc2_b_adj,padj>0.05 ))
+
+G1 <- intersect(tc1_b_adj_ns,tc2_b_adj_up)
+G2 <- intersect(tc1_b_adj_ns,tc2_b_adj_dn)
+
+G3 <- intersect(tc1_b_adj_up, tc2_b_adj_dn)
+G4 <- intersect(tc1_b_adj_dn, tc2_b_adj_up)
+
+G5 <- intersect(tc1_b_adj_up,tc2_b_adj_ns)
+G6 <- intersect(tc1_b_adj_dn,tc2_b_adj_ns)
+
+G7 <- intersect(tc1_b_adj_up, tc2_b_adj_up)
+G8 <- intersect(tc1_b_adj_dn, tc2_b_adj_dn)
+
+G9 <- intersect(tc1_b_adj_ns,tc2_b_adj_ns)
+
+GL <- list("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9)
+lapply(GL,length)
+
+length(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8,"G9"=G9))
+
+length(unique(c("G1"=G1,"G2"=G2,"G3"=G3,"G4"=G4,"G5"=G5,"G6"=G6,"G7"=G7,"G8"=G8)))
+
+```
+
+
+
+
 
 ### Timecourse in low CRP group and treatment group A
 

@@ -137,6 +137,9 @@ myeuler(list("crp_t0"=crp_t0,"avb_t0"=avb_t0))
 myeuler(list("crp_eos"=crp_eos,"avb_eos"=avb_eos))
 myeuler(list("crp_pod1"=crp_pod1,"avb_pod1"=avb_pod1))
 
+myeuler(list("crp_pod1"=crp_pod1,"avb_eos"=avb_eos))
+
+
 message("crp_t0")
 datatable(crp_t0[1:1000,1:6])
 message("crp_eos")

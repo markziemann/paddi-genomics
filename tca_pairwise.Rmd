@@ -1747,6 +1747,86 @@ tc_hi_b_t0vpod1_adj <- dge
 
 ```
 
+### Timecourse in Treatment group A
+
+#### T0 vs EOS
+
+```{r,tc_trtA_T0vEOS}
+
+ss2 <- as.data.frame(cbind(ss1,sscell))
+ss2 <- ss2[order(rownames(ss2)),]
+ss2 <- ss2[table(ss2$PG_number)==3,] # must include all 3 timepoints
+
+mx <- xx[,colnames(xx) %in% rownames(ss2)]
+mx <- mx[,order(colnames(mx)),]
+
+rownames(ss2) == colnames(mx)
+
+ss2$timepoint <- factor(ss2$timepoint, ordered = TRUE,levels=c("T0","EOS","POD1"))
+ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
+
+str(ss2)
+blah()
+ss3 <- subset(ss2,crp_group==1 & timepoint != "POD1")
+ss3$case <- grepl("EOS",ss3$timepoint)
+mx <- mx[,colnames(mx) %in% rownames(ss3)]
+dim(mx)
+mx <- mx[which(rowMeans(mx)>=10),]
+dim(mx)
+
+# base model
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ case )
+
+res <- DESeq(dds,test="LRT",reduced=~1)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+
+# model with PG number as batch
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + case )
+
+res <- DESeq(dds,test="LRT",reduced=~PG_number)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_t0veos <- dge
+
+# model with cell covariates
+# Monocytes.C NK T.CD8.Memory T.CD4.Naive Neutrophils.LD
+dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
+  design = ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD + case )
+
+res <- DESeq(dds,test="LRT",reduced= ~ PG_number + Monocytes.C + NK + T.CD8.Memory + T.CD4.Naive + Neutrophils.LD)
+z <- results(res)
+vsd <- vst(dds, blind=FALSE)
+zz <- cbind(as.data.frame(z),assay(vsd))
+dge <- as.data.frame(zz[order(zz$pvalue),])
+head(dge[order(dge$pvalue),1:6],10)
+mean(abs(dge$stat))
+tc_lo_t0veos_adj <- dge
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## STOP HERE
 
 This one is getting long, so I will continue downstream analysis in a separate script.
