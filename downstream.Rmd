@@ -114,14 +114,14 @@ writeTSV <- function(l) {
 * crp_t0
 * crp_eos
 * crp_pod1
-* avb_t0
-* avb_eos
-* avb_pod1
+* dex_t0
+* dex_eos
+* dex_pod1
 
 ```{r,l1_basic_charts}
 
 l1 <- list("crp_t0"=crp_t0, "crp_eos"=crp_eos, "crp_pod1"=crp_pod1,
-  "avb_t0"=avb_t0,"avb_eos"=avb_eos,"avb_pod1"=avb_pod1 )
+  "dex_t0"=dex_t0,"dex_eos"=dex_eos,"dex_pod1"=dex_pod1 )
 
 lapply(1:length(l1),function(i) {
   volcanoplot(x=l1[[i]], title=names(l1)[[i]])
@@ -133,11 +133,11 @@ lapply(1:length(l1),function(i) {
 
 debar(l1) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
-myeuler(list("crp_t0"=crp_t0,"avb_t0"=avb_t0))
-myeuler(list("crp_eos"=crp_eos,"avb_eos"=avb_eos))
-myeuler(list("crp_pod1"=crp_pod1,"avb_pod1"=avb_pod1))
+myeuler(list("crp_t0"=crp_t0,"dex_t0"=dex_t0))
+myeuler(list("crp_eos"=crp_eos,"dex_eos"=dex_eos))
+myeuler(list("crp_pod1"=crp_pod1,"dex_pod1"=dex_pod1))
 
-myeuler(list("crp_pod1"=crp_pod1,"avb_eos"=avb_eos))
+myeuler(list("crp_pod1"=crp_pod1,"dex_eos"=dex_eos))
 
 
 message("crp_t0")
@@ -146,12 +146,12 @@ message("crp_eos")
 datatable(crp_eos[1:1000,1:6])
 message("crp_pod1")
 datatable(crp_pod1[1:1000,1:6])
-message("avb_t0")
-datatable(avb_t0[1:1000,1:6])
-message("avb_eos")
-datatable(avb_eos[1:1000,1:6])
-message("avb_pod1")
-datatable(avb_pod1[1:1000,1:6])
+message("dex_t0")
+datatable(dex_t0[1:1000,1:6])
+message("dex_eos")
+datatable(dex_eos[1:1000,1:6])
+message("dex_pod1")
+datatable(dex_pod1[1:1000,1:6])
 
 ```
 
@@ -163,21 +163,21 @@ datatable(avb_pod1[1:1000,1:6])
 * crp_eos_b
 * crp_pod1_a
 * crp_pod1_b
-* avb_crplo_t0
-* avb_crphi_t0
-* avb_crplo_eos
-* avb_crphi_eos
-* avb_crplo_pod1
-* avb_crphi_pod1
+* dex_crplo_t0
+* dex_crphi_t0
+* dex_crplo_eos
+* dex_crphi_eos
+* dex_crplo_pod1
+* dex_crphi_pod1
 
 ```{r,l2_basic_charts}
 
 l2 <- list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,
   "crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,
   "crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,
-  "avb_crplo_t0"=avb_crplo_t0, "avb_crphi_t0"= avb_crphi_t0,
-  "avb_crplo_eos"=avb_crplo_eos, "avb_crphi_eos"=avb_crphi_eos,
-  "avb_crplo_pod1"=avb_crplo_pod1, "avb_crphi_pod1"=avb_crphi_pod1)
+  "dex_crplo_t0"=dex_crplo_t0, "dex_crphi_t0"= dex_crphi_t0,
+  "dex_crplo_eos"=dex_crplo_eos, "dex_crphi_eos"=dex_crphi_eos,
+  "dex_crplo_pod1"=dex_crplo_pod1, "dex_crphi_pod1"=dex_crphi_pod1)
 
 lapply(1:length(l2),function(i) {
   volcanoplot(x=l2[[i]], title=names(l2)[[i]])
@@ -189,9 +189,9 @@ lapply(1:length(l2),function(i) {
 
 debar(l2) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
-myeuler(list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,"avb_crplo_t0"=avb_crplo_t0, "avb_crphi_t0"= avb_crphi_t0))
-myeuler(list("crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,"avb_crplo_eos"=avb_crplo_eos, "avb_crphi_eos"=avb_crphi_eos))
-myeuler(list("crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,"avb_crplo_pod1"=avb_crplo_pod1, "avb_crphi_pod1"=avb_crphi_pod1))
+myeuler(list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,"dex_crplo_t0"=dex_crplo_t0, "dex_crphi_t0"= dex_crphi_t0))
+myeuler(list("crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,"dex_crplo_eos"=dex_crplo_eos, "dex_crphi_eos"=dex_crphi_eos))
+myeuler(list("crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,"dex_crplo_pod1"=dex_crplo_pod1, "dex_crphi_pod1"=dex_crphi_pod1))
 
 message("crp_t0_a")
 datatable(crp_t0_a[1:1000,1:6])
@@ -205,18 +205,18 @@ message("crp_pod1_a")
 datatable(crp_pod1_a[1:1000,1:6])
 message("crp_pod1_b")
 datatable(crp_pod1_b[1:1000,1:6])
-message("avb_crplo_t0")
-datatable(avb_crplo_t0[1:1000,1:6])
-message("avb_crphi_t0")
-datatable(avb_crphi_t0[1:1000,1:6])
-message("avb_crplo_eos")
-datatable(avb_crplo_eos[1:1000,1:6])
-message("avb_crphi_eos")
-datatable(avb_crphi_eos[1:1000,1:6])
-message("avb_crplo_pod1")
-datatable(avb_crplo_pod1[1:1000,1:6])
-message("avb_crphi_pod1")
-datatable(avb_crphi_pod1[1:1000,1:6])
+message("dex_crplo_t0")
+datatable(dex_crplo_t0[1:1000,1:6])
+message("dex_crphi_t0")
+datatable(dex_crphi_t0[1:1000,1:6])
+message("dex_crplo_eos")
+datatable(dex_crplo_eos[1:1000,1:6])
+message("dex_crphi_eos")
+datatable(dex_crphi_eos[1:1000,1:6])
+message("dex_crplo_pod1")
+datatable(dex_crplo_pod1[1:1000,1:6])
+message("dex_crphi_pod1")
+datatable(dex_crphi_pod1[1:1000,1:6])
 
 ```
 
@@ -227,14 +227,14 @@ datatable(avb_crphi_pod1[1:1000,1:6])
 * crp_t0_adj
 * crp_eos_adj
 * crp_pod1_adj
-* avb_t0_adj
-* avb_eos_adj
-* avb_pod1_adj
+* dex_t0_adj
+* dex_eos_adj
+* dex_pod1_adj
 
 ```{r,l3_basic_charts}
 
 l3 <- list("crp_t0_adj"=crp_t0_adj, "crp_eos_adj"=crp_eos_adj, "crp_pod1_adj"=crp_pod1_adj,
-  "avb_t0_adj"=avb_t0_adj,"avb_eos_adj"=avb_eos_adj,"avb_pod1_adj"=avb_pod1_adj )
+  "dex_t0_adj"=dex_t0_adj,"dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj )
 
 lapply(1:length(l3),function(i) {
   volcanoplot(x=l3[[i]], title=names(l3)[[i]])
@@ -246,9 +246,9 @@ lapply(1:length(l3),function(i) {
 
 debar(l3) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
-myeuler(list("crp_t0_adj"=crp_t0_adj,"avb_t0_adj"=avb_t0_adj))
-myeuler(list("crp_eos_adj"=crp_eos_adj,"avb_eos_adj"=avb_eos_adj))
-myeuler(list("crp_pod1_adj"=crp_pod1_adj,"avb_pod1_adj"=avb_pod1_adj))
+myeuler(list("crp_t0_adj"=crp_t0_adj,"dex_t0_adj"=dex_t0_adj))
+myeuler(list("crp_eos_adj"=crp_eos_adj,"dex_eos_adj"=dex_eos_adj))
+myeuler(list("crp_pod1_adj"=crp_pod1_adj,"dex_pod1_adj"=dex_pod1_adj))
 
 message("crp_t0_adj")
 datatable(crp_t0_adj[1:1000,1:6])
@@ -256,12 +256,12 @@ message("crp_eos_adj")
 datatable(crp_eos_adj[1:1000,1:6])
 message("crp_pod1_adj")
 datatable(crp_pod1_adj[1:1000,1:6])
-message("avb_t0_adj")
-datatable(avb_t0_adj[1:1000,1:6])
-message("avb_eos_adj")
-datatable(avb_eos_adj[1:1000,1:6])
-message("avb_pod1_adj")
-datatable(avb_pod1_adj[1:1000,1:6])
+message("dex_t0_adj")
+datatable(dex_t0_adj[1:1000,1:6])
+message("dex_eos_adj")
+datatable(dex_eos_adj[1:1000,1:6])
+message("dex_pod1_adj")
+datatable(dex_pod1_adj[1:1000,1:6])
 
 ```
 
@@ -273,21 +273,21 @@ datatable(avb_pod1_adj[1:1000,1:6])
 * crp_eos_b_adj
 * crp_pod1_a_adj
 * crp_pod1_b_adj
-* avb_crplo_t0_adj
-* avb_crphi_t0_adj
-* avb_crplo_eos_adj
-* avb_crphi_eos_adj
-* avb_crplo_pod1_adj
-* avb_crphi_pod1_adj
+* dex_crplo_t0_adj
+* dex_crphi_t0_adj
+* dex_crplo_eos_adj
+* dex_crphi_eos_adj
+* dex_crplo_pod1_adj
+* dex_crphi_pod1_adj
 
 ```{r,l4_basic_charts}
 
 l4 <- list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
   "crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
   "crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
-  "avb_crplo_t0_adj"=avb_crplo_t0_adj, "avb_crphi_t0_adj"= avb_crphi_t0_adj,
-  "avb_crplo_eos_adj"=avb_crplo_eos_adj, "avb_crphi_eos_adj"=avb_crphi_eos_adj,
-  "avb_crplo_pod1_adj"=avb_crplo_pod1_adj, "avb_crphi_pod1_adj"=avb_crphi_pod1_adj)
+  "dex_crplo_t0_adj"=dex_crplo_t0_adj, "dex_crphi_t0_adj"=dex_crphi_t0_adj,
+  "dex_crplo_eos_adj"=dex_crplo_eos_adj, "dex_crphi_eos_adj"=dex_crphi_eos_adj,
+  "dex_crplo_pod1_adj"=dex_crplo_pod1_adj, "dex_crphi_pod1_adj"=dex_crphi_pod1_adj)
 
 lapply(1:length(l4),function(i) {
   volcanoplot(x=l2[[i]], title=names(l2)[[i]])
@@ -300,13 +300,13 @@ lapply(1:length(l4),function(i) {
 debar(l4) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
 myeuler(list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
-  "avb_crplo_t0_adj"=avb_crplo_t0_adj, "avb_crphi_t0_adj"= avb_crphi_t0_adj))
+  "dex_crplo_t0_adj"=dex_crplo_t0_adj, "dex_crphi_t0_adj"= dex_crphi_t0_adj))
 
 myeuler(list("crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
-  "avb_crplo_eos_adj"=avb_crplo_eos_adj, "avb_crphi_eos_adj"=avb_crphi_eos_adj))
+  "dex_crplo_eos_adj"=dex_crplo_eos_adj, "dex_crphi_eos_adj"=dex_crphi_eos_adj))
 
 myeuler(list("crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
-  "avb_crplo_pod1_adj"=avb_crplo_pod1_adj, "avb_crphi_pod1_adj"=avb_crphi_pod1_adj))
+  "dex_crplo_pod1_adj"=dex_crplo_pod1_adj, "dex_crphi_pod1_adj"=dex_crphi_pod1_adj))
 
 message("crp_t0_a_adj")
 datatable(crp_t0_a_adj[1:1000,1:6])
@@ -320,18 +320,18 @@ message("crp_pod1_a_adj")
 datatable(crp_pod1_a_adj[1:1000,1:6])
 message("crp_pod1_b_adj")
 datatable(crp_pod1_b_adj[1:1000,1:6])
-message("avb_crplo_t0_adj")
-datatable(avb_crplo_t0_adj[1:1000,1:6])
-message("avb_crphi_t0_adj")
-datatable(avb_crphi_t0_adj[1:1000,1:6])
-message("avb_crplo_eos_adj")
-datatable(avb_crplo_eos_adj[1:1000,1:6])
-message("avb_crphi_eos_adj")
-datatable(avb_crphi_eos_adj[1:1000,1:6])
-message("avb_crplo_pod1_adj")
-datatable(avb_crplo_pod1_adj[1:1000,1:6])
-message("avb_crphi_pod1_adj")
-datatable(avb_crphi_pod1_adj[1:1000,1:6])
+message("dex_crplo_t0_adj")
+datatable(dex_crplo_t0_adj[1:1000,1:6])
+message("dex_crphi_t0_adj")
+datatable(dex_crphi_t0_adj[1:1000,1:6])
+message("dex_crplo_eos_adj")
+datatable(dex_crplo_eos_adj[1:1000,1:6])
+message("dex_crphi_eos_adj")
+datatable(dev_crphi_eos_adj[1:1000,1:6])
+message("dev_crplo_pod1_adj")
+datatable(dev_crplo_pod1_adj[1:1000,1:6])
+message("dev_crphi_pod1_adj")
+datatable(dev_crphi_pod1_adj[1:1000,1:6])
 
 ```
 
