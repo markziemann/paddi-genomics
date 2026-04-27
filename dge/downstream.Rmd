@@ -1,0 +1,386 @@
+---
+title: "PADDI RNA expression downstream analysis"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 7
+theme: cosmo
+---
+
+## Introduction
+
+The differential analysis was already conducted using the qc.Rmd script.
+Here we are doing downstream analysis including pathway analysis and charts.
+
+```{r,libraries}
+
+suppressPackageStartupMessages({
+  library("gplots")
+  library("reshape2")
+  library("WGCNA")
+  library("dplyr")
+  library("DESeq2")
+  library("mitch")
+  library("MASS")
+  library("kableExtra")
+  library("ggplot2")
+  library("eulerr")
+  library("DT")
+  library("xlsx")
+})
+
+load("qc.Rds")
+
+```
+
+## Functions
+
+```{r,myfunctions}
+
+volcanoplot <- function(x,title) {
+  tot <- nrow(x)
+  sig <- subset(x,padj<0.05)
+  nsig <- nrow(subset(x,padj<0.05))
+  dn <- nrow(subset(x,padj<0.05 & log2FoldChange<0))
+  up <- nrow(subset(x,padj<0.05 & log2FoldChange>0))
+  header <- paste(title,":", tot, "genes,", nsig ,"@5% FDR,", up, "up,", dn, "dn")
+
+  plot(x$log2FoldChange,-log10(x$pvalue),bty="n",
+    cex=0.5, pch=19, xlab="log2 fold change",
+    ylab="-log10 p-value", main=header)
+
+  points(sig$log2FoldChange,-log10(sig$pvalue),
+    cex=0.5, pch=19, col="red")
+}
+
+smearplot <- function(x,title) {
+  tot <- nrow(x)
+  sig <- subset(x,padj<0.05)
+  nsig <- nrow(subset(x,padj<0.05))
+  dn <- nrow(subset(x,padj<0.05 & log2FoldChange<0))
+  up <- nrow(subset(x,padj<0.05 & log2FoldChange>0))
+  header <- paste(title,":", tot, "genes,", nsig ,"@5% FDR,", up, "up,", dn, "dn")
+
+  plot(log10(x$baseMean),x$log2FoldChange,bty="n",
+    cex=0.5, pch=19, xlab="log10 base mean",
+    ylab="log2 fold change", main=header)
+
+  points(log10(sig$baseMean),sig$log2FoldChange,
+    cex=0.5, pch=19, col="red")
+}
+
+debar <- function(l) {
+  nn <- sapply(l,function(x) {
+    nup <- nrow(subset(x,padj<0.05 & log2FoldChange>0 ))
+    ndn <- nrow(subset(x,padj<0.05 & log2FoldChange<0 )) *-1
+    return(c(nup,ndn))
+  })
+  rownames(nn) <- c("up","dn")
+  par(mar = c(8.1, 4.1, 4.1, 2.1))
+  barplot(nn[1,],col="blue",beside = TRUE, border=TRUE,ylim=c(min(nn),max(nn)) , las=2)
+  barplot(nn[2,],add=TRUE,col="red",names.arg = "", ylab="", yaxt="n")
+  mtext("blue=up,red=down")
+  par(mar = c(5.1, 4.1, 4.1, 2.1))
+}
+
+myeuler <- function(l) {
+  ups <- lapply(l,function(x) { rownames(subset(x,padj<0.05 & log2FoldChange>0) )})
+  dns <- lapply(l,function(x) { rownames(subset(x,padj<0.05 & log2FoldChange<0) )})
+  names(ups) <- paste(names(ups),"up")
+  names(dns) <- paste(names(dns),"dn")
+  ll <- c(ups,dns)
+  plot(euler(ll),quantities = TRUE)
+}
+
+writeTSV <- function(l) {
+  lapply(1:length(l), function(i) {
+    filename <- paste(names(l)[i],".tsv",sep="")
+    write.table(x=l[[i]],file=filename,sep="\t",quote=FALSE)
+  })
+}
+
+```
+
+## DE results
+
+### Unadjusted for clinical covariates
+
+#### Unstratified, unadjusted
+
+* crp_t0
+* crp_eos
+* crp_pod1
+* dex_t0
+* dex_eos
+* dex_pod1
+
+```{r,l1_basic_charts}
+
+l1 <- list("crp_t0"=crp_t0, "crp_eos"=crp_eos, "crp_pod1"=crp_pod1,
+  "dex_t0"=dex_t0,"dex_eos"=dex_eos,"dex_pod1"=dex_pod1 )
+
+lapply(1:length(l1),function(i) {
+  volcanoplot(x=l1[[i]], title=names(l1)[[i]])
+  smearplot(x=l1[[i]], title=names(l1)[[i]])
+  print( head(l1[[i]],50) |>
+    kbl(caption = paste(names(l1)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F))
+} )
+
+debar(l1) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+blah()
+
+myeuler(list("crp_t0"=crp_t0,"crp_eos"=crp_eos))
+myeuler(list("crp_eos"=crp_eos,"crp_pod1"=crp_pod1))
+
+myeuler(list("dex_t0"=dex_t0,"dex_eos"=dex_eos))
+myeuler(list("dex_eos"=dex_eos,"dex_pod1"=dex_pod1))
+
+myeuler(list("crp_t0"=crp_t0,"dex_t0"=dex_t0))
+myeuler(list("crp_eos"=crp_eos,"dex_eos"=dex_eos))
+myeuler(list("crp_pod1"=crp_pod1,"dex_pod1"=dex_pod1))
+
+myeuler(list("crp_pod1"=crp_pod1,"dex_eos"=dex_eos))
+
+message("crp_t0")
+datatable(crp_t0[1:1000,1:6])
+message("crp_eos")
+datatable(crp_eos[1:1000,1:6])
+message("crp_pod1")
+datatable(crp_pod1[1:1000,1:6])
+message("dex_t0")
+datatable(dex_t0[1:1000,1:6])
+message("dex_eos")
+datatable(dex_eos[1:1000,1:6])
+message("dex_pod1")
+datatable(dex_pod1[1:1000,1:6])
+
+```
+
+```{r,key_intersections}
+
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_eos,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_eos,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_eos,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_eos,padj<0.05 & log2FoldChange>0)) )
+
+intersect( rownames(subset(dex_pod1,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_pod1,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_pod1,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_pod1,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange>0)) )
+
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1,padj<0.05 & log2FoldChange>0)) )
+
+```
+
+#### Stratified, unadjusted
+
+* crp_t0_a
+* crp_t0_b
+* crp_eos_a
+* crp_eos_b
+* crp_pod1_a
+* crp_pod1_b
+* dex_crplo_t0
+* dex_crphi_t0
+* dex_crplo_eos
+* dex_crphi_eos
+* dex_crplo_pod1
+* dex_crphi_pod1
+
+```{r,l2_basic_charts}
+
+l2 <- list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,
+  "crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,
+  "crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,
+  "dex_crplo_t0"=dex_crplo_t0, "dex_crphi_t0"= dex_crphi_t0,
+  "dex_crplo_eos"=dex_crplo_eos, "dex_crphi_eos"=dex_crphi_eos,
+  "dex_crplo_pod1"=dex_crplo_pod1, "dex_crphi_pod1"=dex_crphi_pod1)
+
+lapply(1:length(l2),function(i) {
+  volcanoplot(x=l2[[i]], title=names(l2)[[i]])
+  smearplot(x=l2[[i]], title=names(l2)[[i]])
+  print( head(l2[[i]],50)  |>
+    kbl(caption = paste(names(l2)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F) )
+} )
+
+debar(l2) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_a"=crp_t0_a, "crp_t0_b"=crp_t0_b,"dex_crplo_t0"=dex_crplo_t0, "dex_crphi_t0"= dex_crphi_t0))
+myeuler(list("crp_eos_a"=crp_eos_a, "crp_eos_b"=crp_eos_b,"dex_crplo_eos"=dex_crplo_eos, "dex_crphi_eos"=dex_crphi_eos))
+myeuler(list("crp_pod1_a"= crp_pod1_a, "crp_pod1_b"=crp_pod1_b,"dex_crplo_pod1"=dex_crplo_pod1, "dex_crphi_pod1"=dex_crphi_pod1))
+
+message("crp_t0_a")
+datatable(crp_t0_a[1:1000,1:6])
+message("crp_t0_b")
+datatable(crp_t0_b[1:1000,1:6])
+message("crp_eos_a")
+datatable(crp_eos_a[1:1000,1:6])
+message("crp_eos_b")
+datatable(crp_eos_b[1:1000,1:6])
+message("crp_pod1_a")
+datatable(crp_pod1_a[1:1000,1:6])
+message("crp_pod1_b")
+datatable(crp_pod1_b[1:1000,1:6])
+message("dex_crplo_t0")
+datatable(dex_crplo_t0[1:1000,1:6])
+message("dex_crphi_t0")
+datatable(dex_crphi_t0[1:1000,1:6])
+message("dex_crplo_eos")
+datatable(dex_crplo_eos[1:1000,1:6])
+message("dex_crphi_eos")
+datatable(dex_crphi_eos[1:1000,1:6])
+message("dex_crplo_pod1")
+datatable(dex_crplo_pod1[1:1000,1:6])
+message("dex_crphi_pod1")
+datatable(dex_crphi_pod1[1:1000,1:6])
+
+```
+
+### Adjusted for clinical covariates
+
+#### Unstratified, adjusted
+
+* crp_t0_adj
+* crp_eos_adj
+* crp_pod1_adj
+* dex_t0_adj
+* dex_eos_adj
+* dex_pod1_adj
+
+```{r,l3_basic_charts}
+
+l3 <- list("crp_t0_adj"=crp_t0_adj, "crp_eos_adj"=crp_eos_adj, "crp_pod1_adj"=crp_pod1_adj,
+  "dex_t0_adj"=dex_t0_adj,"dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj )
+
+lapply(1:length(l3),function(i) {
+  volcanoplot(x=l3[[i]], title=names(l3)[[i]])
+  smearplot(x=l3[[i]], title=names(l3)[[i]])
+  print( head(l1[[i]],50) |>
+    kbl(caption = paste(names(l3)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F) )
+} )
+
+debar(l3) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_adj"=crp_t0_adj,"dex_t0_adj"=dex_t0_adj))
+myeuler(list("crp_eos_adj"=crp_eos_adj,"dex_eos_adj"=dex_eos_adj))
+myeuler(list("crp_pod1_adj"=crp_pod1_adj,"dex_pod1_adj"=dex_pod1_adj))
+
+message("crp_t0_adj")
+datatable(crp_t0_adj[1:1000,1:6])
+message("crp_eos_adj")
+datatable(crp_eos_adj[1:1000,1:6])
+message("crp_pod1_adj")
+datatable(crp_pod1_adj[1:1000,1:6])
+message("dex_t0_adj")
+datatable(dex_t0_adj[1:1000,1:6])
+message("dex_eos_adj")
+datatable(dex_eos_adj[1:1000,1:6])
+message("dex_pod1_adj")
+datatable(dex_pod1_adj[1:1000,1:6])
+
+```
+
+#### Stratified, adjusted
+
+* crp_t0_a_adj
+* crp_t0_b_adj
+* crp_eos_a_adj
+* crp_eos_b_adj
+* crp_pod1_a_adj
+* crp_pod1_b_adj
+* dex_crplo_t0_adj
+* dex_crphi_t0_adj
+* dex_crplo_eos_adj
+* dex_crphi_eos_adj
+* dex_crplo_pod1_adj
+* dex_crphi_pod1_adj
+
+```{r,l4_basic_charts}
+
+l4 <- list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
+  "crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
+  "crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
+  "dex_crplo_t0_adj"=dex_crplo_t0_adj, "dex_crphi_t0_adj"=dex_crphi_t0_adj,
+  "dex_crplo_eos_adj"=dex_crplo_eos_adj, "dex_crphi_eos_adj"=dex_crphi_eos_adj,
+  "dex_crplo_pod1_adj"=dex_crplo_pod1_adj, "dex_crphi_pod1_adj"=dex_crphi_pod1_adj)
+
+lapply(1:length(l4),function(i) {
+  volcanoplot(x=l2[[i]], title=names(l2)[[i]])
+  smearplot(x=l2[[i]], title=names(l2)[[i]])
+  print( head(l2[[i]],50) |>
+    kbl(caption = paste(names(l2)[[i]],"top 50 genes")) |>
+    kable_paper("hover", full_width = F) )
+} )
+
+debar(l4) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+myeuler(list("crp_t0_a_adj"=crp_t0_a_adj, "crp_t0_b_adj"=crp_t0_b_adj,
+  "dex_crplo_t0_adj"=dex_crplo_t0_adj, "dex_crphi_t0_adj"= dex_crphi_t0_adj))
+
+myeuler(list("crp_eos_a_adj"=crp_eos_a_adj, "crp_eos_b_adj"=crp_eos_b_adj,
+  "dex_crplo_eos_adj"=dex_crplo_eos_adj, "dex_crphi_eos_adj"=dex_crphi_eos_adj))
+
+myeuler(list("crp_pod1_a_adj"= crp_pod1_a_adj, "crp_pod1_b_adj"=crp_pod1_b_adj,
+  "dex_crplo_pod1_adj"=dex_crplo_pod1_adj, "dex_crphi_pod1_adj"=dex_crphi_pod1_adj))
+
+message("crp_t0_a_adj")
+datatable(crp_t0_a_adj[1:1000,1:6])
+message("crp_t0_b_adj")
+datatable(crp_t0_b_adj[1:1000,1:6])
+message("crp_eos_a_adj")
+datatable(crp_eos_a_adj[1:1000,1:6])
+message("crp_eos_b_adj")
+datatable(crp_eos_b_adj[1:1000,1:6])
+message("crp_pod1_a_adj")
+datatable(crp_pod1_a_adj[1:1000,1:6])
+message("crp_pod1_b_adj")
+datatable(crp_pod1_b_adj[1:1000,1:6])
+message("dex_crplo_t0_adj")
+datatable(dex_crplo_t0_adj[1:1000,1:6])
+message("dex_crphi_t0_adj")
+datatable(dex_crphi_t0_adj[1:1000,1:6])
+message("dex_crplo_eos_adj")
+datatable(dex_crplo_eos_adj[1:1000,1:6])
+message("dex_crphi_eos_adj")
+datatable(dex_crphi_eos_adj[1:1000,1:6])
+message("dex_crplo_pod1_adj")
+datatable(dex_crplo_pod1_adj[1:1000,1:6])
+message("dex_crphi_pod1_adj")
+datatable(dex_crphi_pod1_adj[1:1000,1:6])
+
+```
+
+## Save data
+
+```{r,write}
+
+writeTSV(l1)
+writeTSV(l2)
+writeTSV(l3)
+writeTSV(l4)
+
+system('sed -i "s#^baseMean#GeneID\tbaseMean#" *tsv')
+
+```
+
+## Session information
+
+For reproducibility
+
+```{r,session}
+
+sessionInfo()
+
+```
+
