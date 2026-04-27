@@ -10,10 +10,13 @@ RUN apt-get update -y \
         && rm -rf /var/lib/apt/lists/*
 
 # Install CRAN packages
-RUN Rscript -e 'install.packages(c("DT", "MASS", "WGCNA", "beeswarm", "dplyr", "eulerr", "ggplot2", "gplots", "kableExtra", "reshape2", "xlsx"))'
+RUN Rscript -e 'install.packages(c("DT", "MASS", "beeswarm", "dplyr", "eulerr", "ggplot2", "gplots", "kableExtra", "reshape2", "xlsx"))'
 
 # Install bioconductor packages
-RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2"))'
+RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2","impute"))'
+
+# Install CRAN packages
+RUN Rscript -e 'install.packages("WGCNA")'
 
 # get a clone of the codes using HTTPS with subdirectory
 RUN git clone https://github.com/markziemann/paddi-genomics.git
