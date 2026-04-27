@@ -15,11 +15,11 @@ RUN Rscript -e 'install.packages(c("DT", "MASS", "WGCNA", "beeswarm", "dplyr", "
 # Install bioconductor packages
 RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2"))'
 
-# get a clone of the codes using HTTPS
+# get a clone of the codes using HTTPS with subdirectory
 RUN git clone https://github.com/markziemann/paddi-genomics.git
 
-# 
-COPY 3col.tsv.gz /paddi-genomics
+# copy data
+COPY dge/3col.tsv.gz /paddi-genomics/dge/
 
 # Set the container working directory
 ENV DIRPATH=/paddi-genomics
