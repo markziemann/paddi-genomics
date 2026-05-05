@@ -2232,13 +2232,17 @@ trt2_dex_response_scaled <- as.vector(scale(trt2_dex_response,center=TRUE))
 names(trt2_dex_response_scaled) <- names(trt2_dex_response)
 trt2_dex_response_df <- data.frame(trt2_dex_response_scaled)
 rownames(trt2_dex_response_df) <- gsub("EOS","T0",rownames(trt2_dex_response_df))
-trt2_dex_response_df <- trt2_dex_response_df[which(rownames(trt2_dex_response_df) %in% rownames(ss3)),,drop=FALSE]
+trt2_dex_response_df <- trt2_dex_response_df[which(rownames(trt2_dex_response_df) %in% rownames(ss)),,drop=FALSE]
 mx <- xt0f
 ss2 <- as.data.frame(cbind(ss_t0,sscell_t0))
 ss3 <- merge(trt2_dex_response_df,ss2,by=0)
 rownames(ss3) <- ss3$Row.names
 
 mx <- mx[,colnames(mx) %in% rownames(ss3)]
+
+names(trt2_dex_response_scaled) <- gsub("EOS","T0",names(trt2_dex_response_scaled))
+
+trt2_dex_response_scaled <- trt2_dex_response_scaled[which(names(trt2_dex_response_scaled) %in% colnames(mx))]
 
 # base model
 dds <- DESeqDataSetFromMatrix(countData = mx , colData = ss3,
@@ -2250,18 +2254,18 @@ vsd <- vst(dds, blind=FALSE)
 zz <- cbind(as.data.frame(z),assay(vsd))
 dge <- as.data.frame(zz[order(zz$pvalue),])
 head(dge[order(dge$pvalue),1:6],10)
-mean(abs(dge$stat))
+mean(abs(dge$stat[which(!is.na(dge$stat))]))
 
 ```
 
-Now look at the top genes.
+Now look at the top genes. Correlation between log transformed expression vs scaled dex response.
 
 ```{r,csmd1_check}
 
 rpm <- apply(mx,2,function(x) { x/sum(x) * 1e6 } )
 
 cor_res <- lapply(1:nrow(rpm), function(i) {
-  unlist(cor.test(rpm[i,],trt2_dex_response2)[c(3,4)])
+  unlist(cor.test(log10(rpm[i,]),trt2_dex_response_scaled)[c(3,4)])
 })
 
 cor_df <- do.call(rbind,cor_res)
@@ -2274,14 +2278,10 @@ head(cor_df,20)
 
 lapply(1:10,function(i) {
   g <- rownames(cor_df)[i]
-  plot(rpm[grep(g,rownames(rpm)),],trt2_dex_response_df[,1],main=g)
+  plot(log10(rpm[grep(g,rownames(rpm)),]),trt2_dex_response_scaled,main=g)
 })
 
 ```
-
-CSMD1 is in the top 20 however it wasn't significant.
-DYRK3 appeared in the top spot using the simple pearson correlation however it wasn't statistically significant.
-
 
 ### Placebo vs control EOS in CRP high group
 
