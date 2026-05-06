@@ -28,7 +28,10 @@ suppressPackageStartupMessages({
   library("eulerr")
   library("kableExtra")
   library("gplots")
+  library("RhpcBLASctl")
 })
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 

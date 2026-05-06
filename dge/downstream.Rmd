@@ -31,9 +31,12 @@ suppressPackageStartupMessages({
   library("eulerr")
   library("DT")
   library("xlsx")
+  library("RhpcBLASctl")
 })
 
 load("qc.Rds")
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 

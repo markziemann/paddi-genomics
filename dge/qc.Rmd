@@ -27,7 +27,10 @@ suppressPackageStartupMessages({
   library("MASS")
   library("eulerr")
   library("beeswarm")
+  library("RhpcBLASctl")
 })
+
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 
