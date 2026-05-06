@@ -10,7 +10,7 @@ RUN apt-get update -y \
         && rm -rf /var/lib/apt/lists/*
 
 # Install CRAN packages
-RUN Rscript -e 'install.packages(c("DT", "MASS", "beeswarm", "dplyr", "eulerr", "ggplot2", "gplots", "kableExtra", "reshape2", "xlsx"))'
+RUN Rscript -e 'install.packages(c("DT", "MASS", "beeswarm", "dplyr", "eulerr", "ggplot2", "gplots", "kableExtra", "reshape2", "xlsx","RhpcBLASctl"))'
 
 # Install bioconductor packages
 RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2","impute"))'
@@ -23,6 +23,9 @@ RUN git clone https://github.com/markziemann/paddi-genomics.git
 
 # copy data
 COPY dge/3col.tsv.gz /paddi-genomics/dge/
+COPY dge/rrna_stats.txt /paddi-genomics/dge/
+COPY dge/PADDIgenomicsData.csv /paddi-genomics/dge/
+COPY dge/infec.tsv /paddi-genomics/dge/
 
 # Set the container working directory
 ENV DIRPATH=/paddi-genomics
