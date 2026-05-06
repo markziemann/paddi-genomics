@@ -13,7 +13,7 @@ RUN apt-get update -y \
 RUN Rscript -e 'install.packages(c("DT", "MASS", "beeswarm", "dplyr", "eulerr", "ggplot2", "gplots", "kableExtra", "reshape2", "xlsx","RhpcBLASctl"))'
 
 # Install bioconductor packages
-RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2","impute"))'
+RUN Rscript -e 'BiocManager::install(c("mitch","DESeq2","impute","limma"))'
 
 # Install CRAN packages
 RUN Rscript -e 'install.packages("WGCNA")'
