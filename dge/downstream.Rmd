@@ -133,8 +133,6 @@ lapply(1:length(l1),function(i) {
 
 debar(l1) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
-blah()
-
 myeuler(list("crp_t0"=crp_t0,"crp_eos"=crp_eos))
 myeuler(list("crp_eos"=crp_eos,"crp_pod1"=crp_pod1))
 
