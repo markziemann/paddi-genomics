@@ -1769,7 +1769,6 @@ ss2$timepoint <- factor(ss2$timepoint, ordered = TRUE,levels=c("T0","EOS","POD1"
 ss2$PG_number <- factor(ss2$PG_number, ordered = FALSE)
 
 str(ss2)
-blah()
 ss3 <- subset(ss2,crp_group==1 & timepoint != "POD1")
 ss3$case <- grepl("EOS",ss3$timepoint)
 mx <- mx[,colnames(mx) %in% rownames(ss3)]
