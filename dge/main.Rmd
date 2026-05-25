@@ -1,0 +1,41 @@
+---
+title: "Paddi - main script"
+author: "Mark Ziemann"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    fig_width: 5
+    fig_height: 5
+theme: cosmo
+---
+
+Source: https://github.com/markziemann/paddi-genomics
+
+## Workflow
+
+```{r,main}
+
+if ( ! file.exists("qc.html") ) {  rmarkdown::render("qc.Rmd") }
+
+if ( ! file.exists("qc_dge_infec.html") ) {  rmarkdown::render("qc_dge_infec.Rmd") }
+
+if ( ! file.exists("downstream.html") ) {  rmarkdown::render("downstream.Rmd") }
+
+if ( ! file.exists("enrichment_reactome.Rmd") ) {  rmarkdown::render("enrichment_reactome.Rmd") }
+
+if ( ! file.exists("enrichment_go.Rmd") ) {  rmarkdown::render("enrichment_go.Rmd") }
+
+if ( ! file.exists("tca.html") ) {  rmarkdown::render("tca.Rmd") }
+
+if ( ! file.exists("tca_pairwise.html") ) {  rmarkdown::render("tca_pairwise.Rmd") }
+
+if ( ! file.exists("tca_pairwise_downstream.html") ) {  rmarkdown::render("tca_pairwise_downstream.Rmd") }
+
+if ( ! file.exists("tca_pairwise_pathways.html") ) {  rmarkdown::render("tca_pairwise_pathways.Rmd") }
+
+message("Done!")
+
+```
