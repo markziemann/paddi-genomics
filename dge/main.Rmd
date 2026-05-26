@@ -24,9 +24,9 @@ if ( ! file.exists("qc_dge_infec.html") ) {  rmarkdown::render("qc_dge_infec.Rmd
 
 if ( ! file.exists("downstream.html") ) {  rmarkdown::render("downstream.Rmd") }
 
-if ( ! file.exists("enrichment_reactome.Rmd") ) {  rmarkdown::render("enrichment_reactome.Rmd") }
+if ( ! file.exists("enrichment_reactome.html") ) {  rmarkdown::render("enrichment_reactome.Rmd") }
 
-if ( ! file.exists("enrichment_go.Rmd") ) {  rmarkdown::render("enrichment_go.Rmd") }
+if ( ! file.exists("enrichment_go.html") ) {  rmarkdown::render("enrichment_go.Rmd") }
 
 if ( ! file.exists("tca.html") ) {  rmarkdown::render("tca.Rmd") }
 
