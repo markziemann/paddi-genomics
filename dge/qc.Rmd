@@ -32,7 +32,7 @@ suppressPackageStartupMessages({
 
 RhpcBLASctl::blas_set_num_threads(1)
 
-knitr::opts_chunk$set(dev = 'svg') # set output device to svg
+#knitr::opts_chunk$set(dev = 'svg') # set output device to svg
 
 ```
 
