@@ -38,7 +38,7 @@ load("qc.Rds")
 
 RhpcBLASctl::blas_set_num_threads(1)
 
-#knitr::opts_chunk$set(dev = 'svg') # set output device to svg
+knitr::opts_chunk$set(dev = 'svg') # set output device to svg
 
 ```
 
@@ -275,8 +275,28 @@ lapply(1:length(l3),function(i) {
 
 debar(l3) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
+pdf("volcanos.pdf",height=5,width=5)
+lapply(1:length(l3),function(i) {
+  volcanoplot(x=l3[[i]], title=names(l3)[[i]])
+} )
+dev.off()
+
 myeuler(list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj))
 myeuler(list("crp_eos_adj"=crp_eos_adj,"crp_pod1_adj"=crp_pod1_adj))
+
+crp_t0_adj_up <- rownames(subset(crp_t0_adj[,1:6],padj<0.05 & log2FoldChange>0))
+crp_t0_adj_dn <- rownames(subset(crp_t0_adj[,1:6],padj<0.05 & log2FoldChange<0))
+crp_eos_adj_up <- rownames(subset(crp_eos_adj[,1:6],padj<0.05 & log2FoldChange>0))
+crp_eos_adj_dn <- rownames(subset(crp_eos_adj[,1:6],padj<0.05 & log2FoldChange<0))
+crp_pod1_adj_up <- rownames(subset(crp_pod1_adj[,1:6],padj<0.05 & log2FoldChange>0))
+crp_pod1_adj_dn <- rownames(subset(crp_pod1_adj[,1:6],padj<0.05 & log2FoldChange<0))
+
+intersect(crp_t0_adj_up, crp_eos_adj_up)
+intersect(crp_t0_adj_dn, crp_eos_adj_dn)
+intersect(crp_eos_adj_up, crp_pod1_adj_up)
+intersect(crp_eos_adj_dn, crp_pod1_adj_dn)
+
+intersect(crp_eos_adj_dn, crp_pod1_adj_up)
 
 myeuler(list("dex_t0_adj"=dex_t0_adj,"dex_eos_adj"=dex_eos_adj))
 myeuler(list("dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj))
