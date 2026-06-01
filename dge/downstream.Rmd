@@ -273,9 +273,17 @@ lapply(1:length(l3),function(i) {
 
 debar(l3) ; par(mar = c(5.1, 4.1, 4.1, 2.1))
 
+myeuler(list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj))
+myeuler(list("crp_eos_adj"=crp_eos_adj,"crp_pod1_adj"=crp_pod1_adj))
+
+myeuler(list("dex_t0_adj"=dex_t0_adj,"dex_eos_adj"=dex_eos_adj))
+myeuler(list("dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj))
+
 myeuler(list("crp_t0_adj"=crp_t0_adj,"dex_t0_adj"=dex_t0_adj))
 myeuler(list("crp_eos_adj"=crp_eos_adj,"dex_eos_adj"=dex_eos_adj))
 myeuler(list("crp_pod1_adj"=crp_pod1_adj,"dex_pod1_adj"=dex_pod1_adj))
+
+myeuler(list("crp_pod1_adj"=crp_pod1_adj,"dex_eos_adj"=dex_eos_adj))
 
 message("crp_t0_adj")
 datatable(crp_t0_adj[1:1000,1:6])
