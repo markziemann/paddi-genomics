@@ -32,7 +32,7 @@ suppressPackageStartupMessages({
 
 RhpcBLASctl::blas_set_num_threads(1)
 
-#knitr::opts_chunk$set(dev = 'svg') # set output device to svg
+knitr::opts_chunk$set(dev = 'svg') # set output device to svg
 
 ```
 
@@ -346,6 +346,17 @@ plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
 #text(mds, labels=rownames(mds), cex=0.8) 
 mtext("blue=T0, orange=POD1, pink=EOS, circle=dex, square=placebo, \n outline blk=low, red=high")
 points(mds,type = "p",pch=PCH-15, col=OUTLINE,cex=1.5)
+
+pdf("pca_chart.pdf",width=5,height=5)
+
+plot(mds, xlab="Coordinate 1", ylab="Coordinate 2",
+  xlim=c(minx*1.1,maxx*1.1), ylim = c(miny*1.1,maxy*1.1) , cex=1.5 ,
+  type = "p", col=col, pch=PCH, cex.axis=1.3,cex.lab=1.3, bty='n')
+#text(mds, labels=rownames(mds), cex=0.8) 
+mtext("blue=T0, orange=POD1, pink=EOS, circle=dex, square=placebo, \n outline blk=low, red=high")
+points(mds,type = "p",pch=PCH-15, col=OUTLINE,cex=1.5)
+
+dev.off()
 
 ```
 
@@ -1286,6 +1297,14 @@ heatmap.2( dec2, col=colfunc(25),scale="row",
  trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
 heatmap.2( dec2, col=colfunc(25),scale="none",
  trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
+
+pdf("cell_heatmaps.pdf",height=7,width=7)
+heatmap.2( dec2, col=colfunc(25),scale="row",
+ trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
+heatmap.2( dec2, col=colfunc(25),scale="none",
+ trace="none",margins = c(5,5), cexRow=.7, cexCol=.8,  main="cell type abundances")
+dev.off()
+
 par(mar=c(5,10,3,1))
 boxplot(t(dec2[order(rowMeans(dec2)),]),horizontal=TRUE,las=1, xlab="estimated cell proportion (%)")
 par(mar = c(5.1, 4.1, 4.1, 2.1))
@@ -1294,6 +1313,10 @@ heatmap.2( cor(t(dec2)),trace="none",scale="none", margins = c(8,8))
 par(mar=c(5,10,3,1))
 barplot(apply(dec2,1,sd),horiz=TRUE,las=1,xlab="SD of cell proportions (%)")
 which(apply(dec2,1,sd)>4)
+
+pdf("cell_bars.pdf",height=5,width=5)
+barplot(apply(dec2,1,sd),horiz=TRUE,las=1,xlab="SD of cell proportions (%)")
+dev.off()
 
 saveRDS(dec2,"cellcomposition.Rds")
 
@@ -1368,6 +1391,25 @@ null <- lapply(1:17 , function(i) {
   beeswarm(cl,pch=1,cex=0.8,add=TRUE)
 })
 
+pdf("cell_boxplots.pdf",height=5,width=5)
+null <- lapply(1:17 , function(i) {
+  cellname <- colnames(sscell_t0)[i]
+  t0vals_dex <- subset(sscell_t0,trt==0)[,i]
+  t0vals_placebo <- subset(sscell_t0,trt==1)[,i]
+
+  eosvals_dex <- subset(sscell_eos,trt==0)[,i]
+  eosvals_placebo <- subset(sscell_eos,trt==1)[,i]
+
+  pod1vals_dex <- subset(sscell_pod1,trt==0)[,i]
+  pod1vals_placebo <- subset(sscell_pod1,trt==1)[,i]
+
+  cl <- list("t0 placebo"=t0vals_placebo,"t0 dex"=t0vals_dex,
+    "EOS placebo"=eosvals_placebo, "EOS dex"=eosvals_dex,
+    "POD1 placebo"=pod1vals_placebo, "POD1 dex"=pod1vals_dex )
+  boxplot(cl,col="white",cex=0,ylab="estimated relative cell proportion",main=cellname,las=2)
+  beeswarm(cl,pch=1,cex=0.8,add=TRUE)
+})
+dev.off()
 
 sscell_t0$crp <- ss[match(rownames(sscell_t0),rownames(ss)),"crp_group"]
 sscell_eos$crp <- ss[match(rownames(sscell_eos),rownames(ss)),"crp_group"]

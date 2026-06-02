@@ -284,6 +284,10 @@ dev.off()
 myeuler(list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj))
 myeuler(list("crp_eos_adj"=crp_eos_adj,"crp_pod1_adj"=crp_pod1_adj))
 
+pdf("euler_crp.pdf")
+myeuler(list("crp_eos_adj"=crp_eos_adj,"crp_pod1_adj"=crp_pod1_adj))
+dev.off()
+
 crp_t0_adj_up <- rownames(subset(crp_t0_adj[,1:6],padj<0.05 & log2FoldChange>0))
 crp_t0_adj_dn <- rownames(subset(crp_t0_adj[,1:6],padj<0.05 & log2FoldChange<0))
 crp_eos_adj_up <- rownames(subset(crp_eos_adj[,1:6],padj<0.05 & log2FoldChange>0))
@@ -300,6 +304,10 @@ intersect(crp_eos_adj_dn, crp_pod1_adj_up)
 
 myeuler(list("dex_t0_adj"=dex_t0_adj,"dex_eos_adj"=dex_eos_adj))
 myeuler(list("dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj))
+
+pdf("euler_dex.pdf")
+myeuler(list("dex_eos_adj"=dex_eos_adj,"dex_pod1_adj"=dex_pod1_adj))
+dev.off()
 
 myeuler(list("crp_t0_adj"=crp_t0_adj,"dex_t0_adj"=dex_t0_adj))
 myeuler(list("crp_eos_adj"=crp_eos_adj,"dex_eos_adj"=dex_eos_adj))
