@@ -328,7 +328,76 @@ datatable(dex_eos_adj[1:1000,1:6])
 message("dex_pod1_adj")
 datatable(dex_pod1_adj[1:1000,1:6])
 
+# herenow change to dex
+dex_t0_adj_up <- rownames(subset(dex_t0_adj[,1:6],padj<0.05 & log2FoldChange>0))
+dex_t0_adj_dn <- rownames(subset(dex_t0_adj[,1:6],padj<0.05 & log2FoldChange<0))
+dex_eos_adj_up <- rownames(subset(dex_eos_adj[,1:6],padj<0.05 & log2FoldChange>0))
+dex_eos_adj_dn <- rownames(subset(dex_eos_adj[,1:6],padj<0.05 & log2FoldChange<0))
+dex_pod1_adj_up <- rownames(subset(dex_pod1_adj[,1:6],padj<0.05 & log2FoldChange>0))
+dex_pod1_adj_dn <- rownames(subset(dex_pod1_adj[,1:6],padj<0.05 & log2FoldChange<0))
+
+intersect(dex_t0_adj_up, dex_eos_adj_up)
+intersect(dex_t0_adj_dn, dex_eos_adj_dn)
+intersect(dex_eos_adj_up, dex_pod1_adj_up)
+intersect(dex_eos_adj_dn, dex_pod1_adj_dn)
+intersect(dex_eos_adj_dn, dex_pod1_adj_up)
+intersect(dex_eos_adj_up, dex_pod1_adj_dn)
+
 ```
+
+Key genes: upup, dndn, updn, dnup
+
+```{r,key genes}
+
+x=dex_eos_adj
+y=dex_pod1_adj
+mr1 <- rank(-sign(x$log2FoldChange) * -log10(x$pvalue))
+names(mr1) <- rownames(x)
+mr2 <- rank(-sign(y$log2FoldChange) * -log10(y$pvalue))
+names(mr2) <- rownames(y)
+mr12 <- merge(data.frame(mr1,row.names=names(mr1)),data.frame(mr2,row.names=names(mr2)),by=0)
+mr12$mr12 <- mr12$mr1 + mr12$mr2
+mr12_top <- head(mr12[order(mr12$mr12),],20)
+mr12_top
+sapply(strsplit(mr12_top$Row.names," "),"[[",2)
+
+mr12_bottom <- head(mr12[order(-mr12$mr12),],20)
+sapply(strsplit(mr12_bottom$Row.names," "),"[[",2)
+
+```
+
+```{r,key genes2}
+
+x=dex_eos_adj
+y=dex_pod1_adj
+
+mr1 <- rank(-sign(x$log2FoldChange) * -log10(x$pvalue))
+names(mr1) <- rownames(x)
+mr2 <- rank(sign(y$log2FoldChange) * -log10(y$pvalue))
+names(mr2) <- rownames(y)
+mr12 <- merge(data.frame(mr1,row.names=names(mr1)),data.frame(mr2,row.names=names(mr2)),by=0)
+mr12$mr12 <- mr12$mr1 + mr12$mr2
+mr12_top <- head(mr12[order(mr12$mr12),],100)
+itx <- intersect(dex_eos_adj_up, dex_pod1_adj_dn)
+mr12_top <- mr12_top[which(mr12_top$Row.names %in% itx),]
+mr12_top
+sapply(strsplit(mr12_top$Row.names," "),"[[",2)
+
+mr1 <- rank(sign(x$log2FoldChange) * -log10(x$pvalue))
+names(mr1) <- rownames(x)
+mr2 <- rank(-sign(y$log2FoldChange) * -log10(y$pvalue))
+names(mr2) <- rownames(y)
+mr12 <- merge(data.frame(mr1,row.names=names(mr1)),data.frame(mr2,row.names=names(mr2)),by=0)
+mr12$mr12 <- mr12$mr1 + mr12$mr2
+mr12_top <- head(mr12[order(mr12$mr12),],100)
+itx <- intersect(dex_eos_adj_dn, dex_pod1_adj_up)
+mr12_top <- mr12_top[which(mr12_top$Row.names %in% itx),]
+mr12_top
+sapply(strsplit(mr12_top$Row.names," "),"[[",2)
+
+```
+
+
 
 ```{r,key_intersections2}
 
