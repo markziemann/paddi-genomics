@@ -330,6 +330,25 @@ datatable(dex_pod1_adj[1:1000,1:6])
 
 ```
 
+```{r,key_intersections2}
+
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_eos_adj,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_eos_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_eos_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_eos_adj,padj<0.05 & log2FoldChange>0)) )
+
+intersect( rownames(subset(dex_pod1_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_pod1_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_pod1_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_pod1_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange>0)) )
+
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange>0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange>0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange<0)) )
+intersect( rownames(subset(dex_eos_adj,padj<0.05 & log2FoldChange<0)) , rownames(subset(crp_pod1_adj,padj<0.05 & log2FoldChange>0)) )
+
+```
+
 #### Stratified, adjusted
 
 * crp_t0_a_adj
