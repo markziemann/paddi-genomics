@@ -37,7 +37,7 @@ load("qc.Rds")
 
 RhpcBLASctl::blas_set_num_threads(1)
 
-#knitr::opts_chunk$set(dev = 'svg') # set output device to svg
+knitr::opts_chunk$set(dev = 'svg') # set output device to svg
 
 ```
 
@@ -173,9 +173,6 @@ barplot(vec,horiz=TRUE,las=1,cex.names=0.7,xlab="ES",main=myname)
 par( mar = c(5.1, 4.1, 4.1, 2.1) )
 mitch_report(res=mres,outfile=paste(myname,"_mitchreport.html",sep=""),overwrite=TRUE)
 
-
-
-
 ```
 
 Now take a look at the interactions.
@@ -208,44 +205,78 @@ m_dex_eos_adj_dn <- subset(m_dex_eos_adj$enrichment_result,p.adjustANOVA<0.01 & 
 m_dex_pod1_adj_up <- subset(m_dex_pod1_adj$enrichment_result,p.adjustANOVA<0.01 & s.dist>0)$set
 m_dex_pod1_adj_dn <- subset(m_dex_pod1_adj$enrichment_result,p.adjustANOVA<0.01 & s.dist<0)$set
 
+# CRP
 crp_l <- list("t0 CRP up"=m_crp_t0_adj_up,"t0 CRP dn"=m_crp_t0_adj_dn,
   "EOS CRP up"=m_crp_eos_adj_up, "EOS CRP dn"=m_crp_eos_adj_dn,
   "POD1 CRP up"=m_crp_pod1_adj_up, "POD1 CRP dn"=m_crp_pod1_adj_dn)
 
 plot(euler(crp_l),quantities = TRUE)
 
+crp_l <- list("t0 CRP up"=m_crp_t0_adj_up,"t0 CRP dn"=m_crp_t0_adj_dn,
+  "EOS CRP up"=m_crp_eos_adj_up, "EOS CRP dn"=m_crp_eos_adj_dn)
+
+plot(euler(crp_l),quantities = TRUE)
+
+intersect(m_crp_t0_adj_dn, m_crp_eos_adj_dn)
+intersect(m_crp_t0_adj_up, m_crp_eos_adj_up)
+
 crp_l <- list("EOS CRP up"=m_crp_eos_adj_up, "EOS CRP dn"=m_crp_eos_adj_dn,
   "POD1 CRP up"=m_crp_pod1_adj_up, "POD1 CRP dn"=m_crp_pod1_adj_dn)
 
 plot(euler(crp_l),quantities = TRUE)
 
+intersect(m_crp_eos_adj_dn, m_crp_pod1_adj_dn)
+intersect(m_crp_eos_adj_up, m_crp_pod1_adj_up)
+
+intersect(m_crp_eos_adj_up, m_crp_pod1_adj_dn)
+intersect(m_crp_eos_adj_dn, m_crp_pod1_adj_up)
+
+# DEX
 dex_l <- list("t0 dex up"=m_dex_t0_adj_up,"t0 dex dn"=m_dex_t0_adj_dn,
   "EOS dex up"=m_dex_eos_adj_up, "EOS dex dn"=m_dex_eos_adj_dn,
   "POD1 dex up"=m_dex_pod1_adj_up, "POD1 dex dn"=m_dex_pod1_adj_dn)
 
 plot(euler(dex_l),quantities = TRUE)
 
+dex_l <- list("t0 dex up"=m_dex_t0_adj_up,"t0 dex dn"=m_dex_t0_adj_dn,
+  "EOS dex up"=m_dex_eos_adj_up, "EOS dex dn"=m_dex_eos_adj_dn)
+
+plot(euler(dex_l),quantities = TRUE)
+
+intersect(m_dex_t0_adj_up,m_dex_eos_adj_up)
+intersect(m_dex_t0_adj_dn,m_dex_eos_adj_dn)
+
+intersect(m_dex_t0_adj_up,m_dex_eos_adj_dn)
+intersect(m_dex_t0_adj_dn,m_dex_eos_adj_up)
+
 dex_l <- list("EOS dex up"=m_dex_eos_adj_up, "EOS dex dn"=m_dex_eos_adj_dn,
   "POD1 dex up"=m_dex_pod1_adj_up, "POD1 dex dn"=m_dex_pod1_adj_dn)
 
 plot(euler(dex_l),quantities = TRUE)
 
+intersect(m_dex_eos_adj_up,m_dex_pod1_adj_up)
+intersect(m_dex_eos_adj_dn,m_dex_pod1_adj_dn)
+
+intersect(m_dex_eos_adj_up,m_dex_pod1_adj_dn)
+intersect(m_dex_eos_adj_dn,m_dex_pod1_adj_up)
 
 cross_eos <- list("EOS dex up"=m_dex_eos_adj_up, "EOS dex dn"=m_dex_eos_adj_dn,
   "EOS CRP up"=m_crp_eos_adj_up, "EOS CRP dn"=m_crp_eos_adj_dn)
 
 plot(euler(cross_eos),quantities = TRUE)
 
-
 cross_pod1 <- list("POD1 dex up"=m_dex_pod1_adj_up, "POD1 dex dn"=m_dex_pod1_adj_dn,
   "POD1 CRP up"=m_crp_pod1_adj_up, "POD1 CRP dn"=m_crp_pod1_adj_dn)
 
 plot(euler(cross_pod1),quantities = TRUE)
 
+intersect(m_crp_eos_adj_up, m_dex_eos_adj_dn)
+
+intersect(m_crp_eos_adj_dn, m_dex_eos_adj_up)
+
 intersect(m_crp_pod1_adj_up, m_dex_pod1_adj_dn)
 
 intersect(m_crp_pod1_adj_dn, m_dex_pod1_adj_up)
-
 
 ```
 
@@ -301,6 +332,7 @@ top[,1] = NULL
 heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at EOS") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_eos_mitchreport.html",overwrite=TRUE)
+mitch_plots(res=mm1,outfile="multireactome_eos_mitchplots.pdf")
 
 l1 <- list("crp_pod1_adj"=crp_pod1_adj, "dex_pod1_adj"=dex_pod1_adj)
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
@@ -312,9 +344,9 @@ top[,1] = NULL
 heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at POD1") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_pod1_mitchreport.html",overwrite=TRUE)
+mitch_plots(res=mm1,outfile="multireactome_pod1_mitchplots.pdf")
 
 ```
-
 
 ## Individual contrast analysis stratified
 
