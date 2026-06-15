@@ -83,7 +83,7 @@ myname <- "crp_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -98,7 +98,7 @@ myname <- "crp_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -113,7 +113,7 @@ myname <- "crp_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -136,7 +136,7 @@ l1 <- list("crp_t0_adj"=crp_t0_adj,"crp_eos_adj"=crp_eos_adj,
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
 
 mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:9)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -159,7 +159,7 @@ This might work better if we work on each timepoint separately.
 l1 <- list("crp_t0_adj"=crp_t0_adj, "avb_t0_adj"=avb_t0_adj)
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
 mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -170,7 +170,7 @@ mitch_report(res=mm1,outfile="multigo_t0_mitchreport.html",overwrite=TRUE)
 l1 <- list("crp_eos_adj"=crp_eos_adj, "avb_eos_adj"=avb_eos_adj)
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
 mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -181,7 +181,7 @@ mitch_report(res=mm1,outfile="multigo_eos_mitchreport.html",overwrite=TRUE)
 l1 <- list("crp_pod1_adj"=crp_pod1_adj, "avb_pod1_adj"=avb_pod1_adj)
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
 mm1 <- mitch_calc(x=m1,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -214,7 +214,7 @@ myname <- "crp_t0_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -229,7 +229,7 @@ myname <- "crp_t0_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -244,7 +244,7 @@ myname <- "crp_eos_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -259,7 +259,7 @@ myname <- "crp_eos_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -274,7 +274,7 @@ myname <- "crp_pod1_a_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -289,7 +289,7 @@ myname <- "crp_pod1_b_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -304,7 +304,7 @@ myname <- "avb_crplo_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -319,7 +319,7 @@ myname <- "avb_crphi_t0_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -334,7 +334,7 @@ myname <- "avb_crplo_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -349,7 +349,7 @@ myname <- "avb_crphi_eos_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -364,7 +364,7 @@ myname <- "avb_crplo_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -379,7 +379,7 @@ myname <- "avb_crphi_pod1_adj"
 
 m <- mitch_import(x=de, DEtype="deseq2", geneTable=gt )
 mres <- mitch_calc(x=m,genesets=go,minsetsize=5,cores=16,priority="effect")
-mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.05),30)
+mtop <- head(subset (mres$enrichment_result,p.adjustANOVA<0.01),30)
 mtop |> kbl(caption=paste(myname,"GO")) |> kable_paper("hover", full_width = F)
 vec <- mtop$s.dist
 names(vec) <- mtop$set
@@ -412,7 +412,7 @@ l2 <- list("crp_t0_a"=crp_t0_a_adj,
 m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
 
 mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:15)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -439,7 +439,7 @@ l2 <- list("crp_t0_a"=crp_t0_a_adj, "crp t0 b"=crp_t0_b_adj,
   "avb crplo t0"=avb_crplo_t0_adj, "avb crphi t0"=avb_crphi_t0_adj)
 m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
 mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:7)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -456,7 +456,7 @@ l2 <- list("crp_eos_a"=crp_eos_a_adj, "crp eos b"=crp_eos_b_adj,
   "avb crplo eos"=avb_crplo_eos_adj, "avb crphi eos"=avb_crphi_eos_adj)
 m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
 mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:7)]
 rownames(top) <- top[,1]
 top[,1] = NULL
@@ -473,7 +473,7 @@ l2 <- list("crp_pod1_a"=crp_pod1_a_adj, "crp pod1 b"=crp_pod1_b_adj,
   "avb crplo pod1"=avb_crplo_pod1_adj, "avb crphi pod1"=avb_crphi_pod1_adj)
 m2 <- mitch_import(x=l2, DEtype="deseq2", geneTable=gt )
 mm2 <- mitch_calc(x=m2,genesets=go,minsetsize=5,cores=16,priority="effect")
-top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.05),50)
+top <- head(subset (mm2$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:7)]
 rownames(top) <- top[,1]
 top[,1] = NULL
