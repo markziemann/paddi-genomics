@@ -288,6 +288,25 @@ intersect(m_crp_pod1_adj_dn, m_dex_pod1_adj_up)
 
 ```
 
+## Two-way enrichment analysis
+
+```{r,2way}
+
+blah()
+
+l0 <- list("crp_eos_adj"=crp_eos_adj,
+    "crp_pod1_adj"=crp_pod1_adj,
+    "dex_eos_adj"=dex_eos_adj,
+    "dex_pod1_adj"=dex_pod1_adj)
+
+m0 <- mitch_import(x=l0, DEtype="deseq2", geneTable=gt )
+
+mm0 <- mitch_calc(x=m0,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+
+
+
+```
+
 ## Multi-contrast enrichment analysis.
 
 ```{r,multi1}
@@ -307,7 +326,7 @@ top[,1] = NULL
 colfunc <- colorRampPalette(c("blue", "white", "red"))
 
 heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
-    margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+    margins = c(6,25), cexRow=0.5, cexCol=0.8 )
 
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis") |> kable_paper("hover", full_width = F)
 
@@ -333,7 +352,7 @@ top[,1] = NULL
 colfunc <- colorRampPalette(c("blue", "white", "red"))
 
 heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
-    margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+    margins = c(6,25), cexRow=0.5, cexCol=0.8 )
 
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis") |> kable_paper("hover", full_width = F)
 
@@ -352,7 +371,7 @@ top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
-heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.5, cexCol=0.8 )
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at t0") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_t0_mitchreport.html",overwrite=TRUE)
 
@@ -363,7 +382,7 @@ top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
-heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.5, cexCol=0.8 )
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at EOS") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_eos_mitchreport.html",overwrite=TRUE)
 mitch_plots(res=mm1,outfile="multireactome_eos_mitchplots.pdf")
@@ -375,7 +394,7 @@ top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
 top <- top[,c(1,4:5)]
 rownames(top) <- top[,1]
 top[,1] = NULL
-heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.6, cexCol=0.8 )
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.5, cexCol=0.8 )
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at POD1") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_pod1_mitchreport.html",overwrite=TRUE)
 mitch_plots(res=mm1,outfile="multireactome_pod1_mitchplots.pdf")
