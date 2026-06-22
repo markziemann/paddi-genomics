@@ -288,25 +288,6 @@ intersect(m_crp_pod1_adj_dn, m_dex_pod1_adj_up)
 
 ```
 
-## Two-way enrichment analysis
-
-```{r,2way}
-
-blah()
-
-l0 <- list("crp_eos_adj"=crp_eos_adj,
-    "crp_pod1_adj"=crp_pod1_adj,
-    "dex_eos_adj"=dex_eos_adj,
-    "dex_pod1_adj"=dex_pod1_adj)
-
-m0 <- mitch_import(x=l0, DEtype="deseq2", geneTable=gt )
-
-mm0 <- mitch_calc(x=m0,genesets=reactome,minsetsize=5,cores=16,priority="effect")
-
-
-
-```
-
 ## Multi-contrast enrichment analysis.
 
 ```{r,multi1}
