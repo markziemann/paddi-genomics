@@ -311,7 +311,7 @@ heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none",
 
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis") |> kable_paper("hover", full_width = F)
 
-mitch_report(res=mm1,outfile="multireactome_all_mitchreport.html",overwrite=TRUE)
+mitch_report(res=mm1,outfile="multireactome_all_mitchplots.html",overwrite=TRUE)
 
 ```
 
@@ -343,9 +343,11 @@ mitch_plots(res=mm2,outfile="multireactome__mitchreport.pdf")
 
 ```
 
+# Pairwise analysis
+
 This might work better if we work on each timepoint separately.
 
-```{r,multi1_t0}
+```{r,pairwise1}
 
 l1 <- list("crp_t0_adj"=crp_t0_adj, "dex_t0_adj"=dex_t0_adj)
 m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
@@ -381,6 +383,39 @@ heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(
 as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis at POD1") |> kable_paper("hover", full_width = F)
 mitch_report(res=mm1,outfile="multireactome_pod1_mitchreport.html",overwrite=TRUE)
 mitch_plots(res=mm1,outfile="multireactome_pod1_mitchplots.pdf")
+
+```
+
+Now look at CRP at both timepoints and DEX at both timepoints.
+
+
+```{r,pairwise1}
+
+l1 <- list("crp_eos_adj"=crp_eos_adj, "crp_pod1_adj"=crp_pod1_adj)
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+mm1 <- mitch_calc(x=m1,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
+top <- top[,c(1,4:5)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.5, cexCol=0.8 )
+as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis for CRP at EOS and POD1") |> kable_paper("hover", full_width = F)
+mitch_report(res=mm1,outfile="multireactome_crp_mitchreport.html",overwrite=TRUE)
+mitch_plots(res=mm1,outfile="multireactome_crp_mitchplots.pdf")
+
+
+l1 <- list("dex_eos_adj"=dex_eos_adj, "dex_pod1_adj"=dex_pod1_adj)
+m1 <- mitch_import(x=l1, DEtype="deseq2", geneTable=gt )
+mm1 <- mitch_calc(x=m1,genesets=reactome,minsetsize=5,cores=16,priority="effect")
+top <- head(subset (mm1$enrichment_result,p.adjustMANOVA<0.01),50)
+top <- top[,c(1,4:5)]
+rownames(top) <- top[,1]
+top[,1] = NULL
+heatmap.2(as.matrix(top),trace="none",col=colfunc(25),scale="none", margins = c(6,25), cexRow=0.5, cexCol=0.8 )
+as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis for DEX at EOS and POD1") |> kable_paper("hover", full_width = F)
+mitch_report(res=mm1,outfile="multireactome_dex_mitchreport.html",overwrite=TRUE)
+mitch_plots(res=mm1,outfile="multireactome_dex_mitchplots.pdf")
+
 
 ```
 
