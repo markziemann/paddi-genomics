@@ -339,6 +339,8 @@ as.matrix(top) |> kbl(caption="Top REACTOMEs in multi enrichment analysis") |> k
 
 mitch_report(res=mm2,outfile="multireactome__mitchreport.html",overwrite=TRUE)
 
+mitch_plots(res=mm2,outfile="multireactome__mitchreport.pdf")
+
 ```
 
 This might work better if we work on each timepoint separately.
